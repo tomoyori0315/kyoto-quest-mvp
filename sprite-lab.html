@@ -47,6 +47,7 @@
       <label>Sheet
         <select id="sheet">
           <option value="idle4">player-idle-4dir.png</option>
+          <option value="sideRight">player-walk-side-right.png</option>
           <option value="walk">player-walk-sheet.png</option>
           <option value="static">player-sheet.png</option>
         </select>
@@ -54,6 +55,7 @@
       <button id="play">再生</button>
       <button id="mode">walking</button>
       <button id="swap">left/right入替 OFF</button>
+      <button id="mirror">左右反転 OFF</button>
     </div>
 
     <div class="row grid" id="dirs">
@@ -115,7 +117,7 @@
     <h2>Config JSON</h2>
     <textarea id="config" readonly></textarea>
     <h2>Sheet Preview</h2>
-    <p class="hint">青線が切り出しセル。walkは4列x3行、staticは2列x2行として表示します。</p>
+    <p class="hint">青線が切り出しセル。idle4は4列x1行、side-rightは3列x1行、walkは4列x3行、staticは2列x2行として表示します。</p>
     <div class="sheet-box"><canvas id="preview"></canvas></div>
   </section>
 </main>
@@ -124,15 +126,17 @@
 "use strict";
 const sheets={
   idle4:{src:"assets/sprites/player-idle-4dir.png",cols:4,rows:1,dirs:["down","up","left","right"],idleRow:0,walkRows:[0]},
+  sideRight:{src:"assets/sprites/player-walk-side-right.png",cols:3,rows:1,dirs:["right"],idleCol:1,walkCols:[0,1,2,1]},
   walk:{src:"assets/sprites/player-walk-sheet.png",cols:4,rows:3,dirs:["down","up","left","right"],idleRow:1,walkRows:[0,1,2,1]},
   static:{src:"assets/sprites/player-sheet.png",cols:2,rows:2,dirs:["down","up","left","right"],cells:{down:[0,0],up:[1,0],left:[0,1],right:[1,1]},idleRow:0,walkRows:[0]}
 };
-const state={sheet:"idle4",dir:"down",playing:false,walking:false,swapLR:false,frame:0};
+const state={sheet:"idle4",dir:"down",playing:false,walking:false,swapLR:false,mirrorX:false,frame:0};
 const imgs={};
 const els={
   stage:document.getElementById("stage"),bg:document.getElementById("bg"),sprite:document.getElementById("sprite"),
   anchor:document.getElementById("anchor"),sheet:document.getElementById("sheet"),play:document.getElementById("play"),
   mode:document.getElementById("mode"),swap:document.getElementById("swap"),height:document.getElementById("height"),
+  mirror:document.getElementById("mirror"),
   anchorX:document.getElementById("anchorX"),anchorY:document.getElementById("anchorY"),preview:document.getElementById("preview"),
   readout:document.getElementById("readout"),cropX:document.getElementById("cropX"),cropY:document.getElementById("cropY"),
   cellW:document.getElementById("cellW"),cellH:document.getElementById("cellH"),offsetX:document.getElementById("offsetX"),
@@ -184,6 +188,10 @@ function effectiveDir(){
 function currentCell(){
   const s=sheets[state.sheet],dir=effectiveDir();
   if(s.cells)return s.cells[dir];
+  if(s.walkCols){
+    const col=state.walking?(state.playing?s.walkCols[state.frame%s.walkCols.length]:s.idleCol):s.idleCol;
+    return [col,0];
+  }
   const col=s.dirs.indexOf(dir);
   const row=state.walking?(state.playing?s.walkRows[state.frame%s.walkRows.length]:s.idleRow):s.idleRow;
   return [col,row];
@@ -213,6 +221,7 @@ function renderSprite(){
   els.sprite.style.height=h*scale+"px";
   els.sprite.style.left=(ax-w/2+cv.offsetX+dirOffset.x)*scale+"px";
   els.sprite.style.top=(ay-h+cv.offsetY+dirOffset.y)*scale+"px";
+  els.sprite.style.transform=state.mirrorX?"scaleX(-1)":"scaleX(1)";
   els.anchor.style.left=ax*scale+"px";
   els.anchor.style.top=ay*scale+"px";
   els.bg.style.width=180*scale+"px";
@@ -231,6 +240,7 @@ function renderSprite(){
     commonOffsetX:cv.offsetX,
     commonOffsetY:cv.offsetY,
     swapLR:state.swapLR,
+    mirrorX:state.mirrorX,
     offsets
   },null,2);
 }
@@ -253,17 +263,22 @@ function setActiveDir(){
 document.getElementById("dirs").addEventListener("click",e=>{
   if(e.target.dataset.dir){state.dir=e.target.dataset.dir;setActiveDir();renderSprite();}
 });
-els.sheet.onchange=()=>{state.sheet=els.sheet.value;state.frame=0;loadImage(sheets[state.sheet].src);setDefaultCrop(true);renderPreview();renderSprite();};
+els.sheet.onchange=()=>{
+  state.sheet=els.sheet.value;state.frame=0;
+  if(state.sheet==="sideRight"){state.dir="right";setActiveDir();}
+  loadImage(sheets[state.sheet].src);setDefaultCrop(true);renderPreview();renderSprite();
+};
 els.play.onclick=()=>{state.playing=!state.playing;els.play.classList.toggle("active",state.playing);els.play.textContent=state.playing?"停止":"再生";renderSprite();};
 els.mode.onclick=()=>{state.walking=!state.walking;els.mode.classList.toggle("active",state.walking);els.mode.textContent=state.walking?"walking":"idle only";state.frame=0;renderSprite();};
 els.swap.onclick=()=>{state.swapLR=!state.swapLR;els.swap.classList.toggle("active",state.swapLR);els.swap.textContent=`left/right入替 ${state.swapLR?"ON":"OFF"}`;renderSprite();};
+els.mirror.onclick=()=>{state.mirrorX=!state.mirrorX;els.mirror.classList.toggle("active",state.mirrorX);els.mirror.textContent=`左右反転 ${state.mirrorX?"ON":"OFF"}`;renderSprite();};
 els.height.onchange=els.anchorX.onchange=els.anchorY.onchange=renderSprite;
 for(const id of ["cropX","cropY","cellW","cellH","offsetX","offsetY","downOffsetX","downOffsetY","upOffsetX","upOffsetY","leftOffsetX","leftOffsetY","rightOffsetX","rightOffsetY"]){
   els[id].addEventListener("input",()=>{renderPreview();renderSprite();});
 }
 els.resetCrop.onclick=()=>{setDefaultCrop(true);renderPreview();renderSprite();};
 setInterval(()=>{if(state.playing){state.frame++;renderSprite();}},220);
-loadImage(sheets.idle4.src);loadImage(sheets.walk.src);loadImage(sheets.static.src);setDefaultCrop();renderSprite();
+loadImage(sheets.idle4.src);loadImage(sheets.sideRight.src);loadImage(sheets.walk.src);loadImage(sheets.static.src);setDefaultCrop();renderSprite();
 </script>
 </body>
 </html>
