@@ -257,6 +257,20 @@ const PLAYER_IDLE={
   },
   frames:{}
 };
+const PLAYER_SIDE_WALK={
+  src:'assets/sprites/player-walk-side-right.png',
+  img:new Image(),
+  ready:false,
+  cellW:591,
+  cellH:887,
+  drawH:34,
+  sequence:[0,1,2,1],
+  offsets:{
+    right:{x:1,y:6},
+    left:{x:-1,y:6}
+  },
+  frames:[]
+};
 function loadPlayerIdleSprite(){
   const img=PLAYER_IDLE.img;
   img.onload=()=>{
@@ -268,10 +282,31 @@ function loadPlayerIdleSprite(){
   };
   img.src=PLAYER_IDLE.src;
 }
+function loadPlayerSideWalkSprite(){
+  const img=PLAYER_SIDE_WALK.img;
+  img.onload=()=>{
+    PLAYER_SIDE_WALK.frames=[];
+    for(let col=0;col<3;col++)PLAYER_SIDE_WALK.frames[col]=makePlayerSideWalkFrame(img,col);
+    PLAYER_SIDE_WALK.ready=true;
+  };
+  img.onerror=()=>{PLAYER_SIDE_WALK.ready=false;};
+  img.src=PLAYER_SIDE_WALK.src;
+}
 function makePlayerIdleFrame(img,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=PLAYER_IDLE.cellW;c.height=PLAYER_IDLE.cellH;
   g.drawImage(img,col*PLAYER_IDLE.cellW,0,PLAYER_IDLE.cellW,PLAYER_IDLE.cellH,0,0,c.width,c.height);
+  transparentCreamBackground(c,g);
+  return c;
+}
+function makePlayerSideWalkFrame(img,col){
+  const c=document.createElement('canvas'),g=c.getContext('2d');
+  c.width=PLAYER_SIDE_WALK.cellW;c.height=PLAYER_SIDE_WALK.cellH;
+  g.drawImage(img,col*PLAYER_SIDE_WALK.cellW,0,PLAYER_SIDE_WALK.cellW,PLAYER_SIDE_WALK.cellH,0,0,c.width,c.height);
+  transparentCreamBackground(c,g);
+  return c;
+}
+function transparentCreamBackground(c,g){
   try{
     const data=g.getImageData(0,0,c.width,c.height),p=data.data;
     for(let i=0;i<p.length;i+=4){
@@ -279,7 +314,6 @@ function makePlayerIdleFrame(img,col){
     }
     g.putImageData(data,0,0);
   }catch(_){}
-  return c;
 }
 
 //============ 背景パーツ ============
@@ -473,6 +507,11 @@ function drawPlayerFallback(sx,sy){
   }
 }
 function drawPlayer(sx,sy){
+  if(P.moving&&(P.dir==='left'||P.dir==='right')&&PLAYER_SIDE_WALK.ready){
+    const idx=PLAYER_SIDE_WALK.sequence[Math.floor(P.anim/10)%PLAYER_SIDE_WALK.sequence.length];
+    const frame=PLAYER_SIDE_WALK.frames[idx];
+    if(frame){drawPlayerSideWalkFrame(frame,sx,sy,P.dir);return;}
+  }
   const frame=PLAYER_IDLE.frames[P.dir]||PLAYER_IDLE.frames.down;
   if(!PLAYER_IDLE.ready||!frame){drawPlayerFallback(sx,sy);return;}
   const drawH=PLAYER_IDLE.drawH,drawW=PLAYER_IDLE.cellW/PLAYER_IDLE.cellH*drawH;
@@ -480,6 +519,22 @@ function drawPlayer(sx,sy){
   ctx.fillStyle='rgba(0,0,0,.24)';
   ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
   ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
+}
+function drawPlayerSideWalkFrame(frame,sx,sy,dir){
+  const drawH=PLAYER_SIDE_WALK.drawH,drawW=PLAYER_SIDE_WALK.cellW/PLAYER_SIDE_WALK.cellH*drawH;
+  const off=PLAYER_SIDE_WALK.offsets[dir]||PLAYER_SIDE_WALK.offsets.right;
+  const drawX=sx-drawW/2+off.x,drawY=sy-drawH+off.y;
+  ctx.fillStyle='rgba(0,0,0,.24)';
+  ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
+  if(dir==='left'){
+    ctx.save();
+    ctx.translate(drawX+drawW,drawY);
+    ctx.scale(-1,1);
+    ctx.drawImage(frame,0,0,drawW,drawH);
+    ctx.restore();
+  }else{
+    ctx.drawImage(frame,drawX,drawY,drawW,drawH);
+  }
 }
 function drawNPC(n,sx,sy){
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+14,5.5,2.2,0,0,7);ctx.fill();
@@ -907,6 +962,7 @@ function render(){
 }
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
 loadPlayerIdleSprite();
+loadPlayerSideWalkSprite();
 loadBackgroundImages();
 enterScene('sando',false);
 updateCatCount();loop();
