@@ -40,6 +40,11 @@
   #book-btn .ico{font-size:clamp(18px,5vw,22px);line-height:1;}
   #book-btn .lbl{font-size:9px;font-weight:700;}
   #book-btn:active{transform:translateY(1px);}
+  #debug-btn{width:clamp(36px,9vw,44px);height:clamp(28px,8vw,36px);padding:3px;
+    display:flex;align-items:center;justify-content:center;
+    pointer-events:auto;cursor:pointer;flex:none;font-size:10px;font-weight:700;letter-spacing:.03em;}
+  #debug-btn.active{background:linear-gradient(180deg,#2f3b2f,#1b241b);color:#92ff92;border-color:#5eda5e;}
+  #debug-btn:active{transform:translateY(1px);}
   #quest-bar{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 56px);max-width:64%;
     padding:7px 11px;font-size:clamp(11px,3.2vw,14px);line-height:1.45;color:var(--ink);
     z-index:18;pointer-events:none;display:flex;gap:7px;align-items:flex-start;}
@@ -152,6 +157,7 @@
     </div>
     <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/3</div>
     <div class="panel" id="book-btn"><span class="ico">📒</span><span class="lbl">帳面</span></div>
+    <div class="panel" id="debug-btn">DBG</div>
   </div>
 
   <div class="panel" id="quest-bar">
@@ -229,7 +235,7 @@ function floorTop(){ return MAPS[SCENE].walkable.top; }
 function floorBot(){ return MAPS[SCENE].walkable.bottom; }
 
 let P={x:90,y:300,dir:'up',moving:false,anim:0,speed:1.1};
-let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null};
+let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null,debug:false};
 
 function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
@@ -688,6 +694,51 @@ function toast(ico,title,sub){
   layer.appendChild(el);setTimeout(()=>el.remove(),2400);
 }
 
+//============ デバッグ表示 ============
+function toggleDebug(){
+  game.debug=!game.debug;
+  document.getElementById('debug-btn').classList.toggle('active',game.debug);
+}
+function debugLabel(text,x,y){
+  ctx.font='6px monospace';ctx.textBaseline='top';
+  const w=ctx.measureText(text).width+3;
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(x-1,y-1,w,8);
+  ctx.fillStyle='#ffffff';ctx.fillText(text,x,y);
+}
+function drawDebug(camY){
+  const map=MAPS[SCENE],w=map.walkable;
+  ctx.save();
+  ctx.lineWidth=1;
+  ctx.fillStyle='rgba(64,255,128,.12)';
+  ctx.strokeStyle='rgba(64,255,128,.9)';
+  ctx.fillRect(w.left,w.top-camY,w.right-w.left,w.bottom-w.top);
+  ctx.strokeRect(w.left+.5,w.top-camY+.5,w.right-w.left,w.bottom-w.top);
+  debugLabel(`walk ${w.left},${w.top}-${w.right},${w.bottom}`,w.left+2,w.top-camY+3);
+
+  ctx.fillStyle='rgba(255,80,80,.22)';
+  ctx.strokeStyle='rgba(255,80,80,.95)';
+  for(const b of map.blockers){
+    const x=b.x-b.halfW,y=b.y-camY-b.halfH,wid=b.halfW*2,hei=b.halfH*2;
+    ctx.fillRect(x,y,wid,hei);ctx.strokeRect(x+.5,y+.5,wid,hei);
+  }
+
+  ctx.font='6px monospace';
+  for(const e of ENTITIES){
+    const sy=e.y-camY;if(sy<-40||sy>VH+40)continue;
+    ctx.strokeStyle=e.type==='exit'?'rgba(255,220,64,.95)':e.type==='cat'?'rgba(255,120,255,.95)':'rgba(80,200,255,.95)';
+    ctx.fillStyle=e.type==='exit'?'rgba(255,220,64,.12)':e.type==='cat'?'rgba(255,120,255,.12)':'rgba(80,200,255,.12)';
+    ctx.beginPath();ctx.arc(e.x,sy,e.r,0,7);ctx.fill();ctx.stroke();
+    R(e.x-1,sy-1,3,3,'#ffffff');
+    debugLabel(e.id||e.name,e.x+3,sy-e.r-8);
+  }
+
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(3,3,86,20);
+  ctx.fillStyle='#92ff92';ctx.font='7px monospace';ctx.textBaseline='top';
+  ctx.fillText(`DBG ${SCENE}`,6,5);
+  ctx.fillText(`P ${P.x.toFixed(1)},${P.y.toFixed(1)}`,6,14);
+  ctx.restore();
+}
+
 //============ 帳面 ============
 function openBook(tab){document.getElementById('book').classList.add('show');renderBook(tab||'cat');}
 function renderBook(tab){
@@ -718,6 +769,7 @@ bindDir('d-up','up');bindDir('d-down','down');bindDir('d-left','left');bindDir('
 document.getElementById('act-main').addEventListener('pointerdown',e=>{e.preventDefault();doAction();});
 document.getElementById('book-btn').addEventListener('pointerdown',e=>{e.preventDefault();
   if(!document.getElementById('book').classList.contains('show'))openBook('cat');});
+document.getElementById('debug-btn').addEventListener('pointerdown',e=>{e.preventDefault();toggleDebug();});
 document.getElementById('book-close').addEventListener('pointerdown',e=>{e.preventDefault();
   document.getElementById('book').classList.remove('show');});
 document.querySelectorAll('#book .tab').forEach(t=>t.addEventListener('pointerdown',e=>{e.preventDefault();renderBook(t.dataset.tab);}));
@@ -727,6 +779,7 @@ addEventListener('keydown',e=>{
   if(e.key==='z'||e.key==='Z'||e.key==='Enter'||e.key===' '){e.preventDefault();doAction();}
   if(e.key==='b'||e.key==='B'){const b=document.getElementById('book');
     if(b.classList.contains('show'))b.classList.remove('show');else openBook('cat');}
+  if((e.key==='d'||e.key==='D')&&!e.repeat){toggleDebug();}
 });
 addEventListener('keyup',e=>{
   if(e.key==='ArrowUp')held.up=false;if(e.key==='ArrowDown')held.down=false;
@@ -775,6 +828,7 @@ function render(){
     const my=sy-(e.type==='object'?30:e.type==='exit'?16:22)-p*2;
     R(e.x-1,my,2,4,'#d9a93a');R(e.x-1,my+5,2,2,'#d9a93a');
   }
+  if(game.debug)drawDebug(camY);
 }
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
 enterScene('sando',false);
