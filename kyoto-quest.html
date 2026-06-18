@@ -271,6 +271,30 @@ const PLAYER_SIDE_WALK={
   },
   frames:[]
 };
+const USE_VERTICAL_WALK=false;
+const PLAYER_VERTICAL_WALK={
+  sequence:[0,1,2,1],
+  up:{
+    src:'assets/sprites/player-walk-up.png',
+    img:new Image(),
+    ready:false,
+    cellW:724,
+    cellH:724,
+    drawH:30,
+    offset:{x:1,y:5},
+    frames:[]
+  },
+  down:{
+    src:'assets/sprites/player-walk-down.png',
+    img:new Image(),
+    ready:false,
+    cellW:724,
+    cellH:724,
+    drawH:30,
+    offset:{x:1,y:4},
+    frames:[]
+  }
+};
 function loadPlayerIdleSprite(){
   const img=PLAYER_IDLE.img;
   img.onload=()=>{
@@ -292,6 +316,20 @@ function loadPlayerSideWalkSprite(){
   img.onerror=()=>{PLAYER_SIDE_WALK.ready=false;};
   img.src=PLAYER_SIDE_WALK.src;
 }
+function loadPlayerVerticalWalkSprites(){
+  for(const dir of ['up','down']){
+    const cfg=PLAYER_VERTICAL_WALK[dir],img=cfg.img;
+    img.onload=()=>{
+      cfg.ready=false;
+      cfg.frames=[];
+      if(img.naturalWidth<cfg.cellW*3||img.naturalHeight<cfg.cellH)return;
+      for(let col=0;col<3;col++)cfg.frames[col]=makePlayerVerticalWalkFrame(img,cfg,col);
+      cfg.ready=cfg.frames.length===3&&cfg.frames.every(Boolean);
+    };
+    img.onerror=()=>{cfg.ready=false;};
+    img.src=cfg.src;
+  }
+}
 function makePlayerIdleFrame(img,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=PLAYER_IDLE.cellW;c.height=PLAYER_IDLE.cellH;
@@ -303,6 +341,13 @@ function makePlayerSideWalkFrame(img,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=PLAYER_SIDE_WALK.cellW;c.height=PLAYER_SIDE_WALK.cellH;
   g.drawImage(img,col*PLAYER_SIDE_WALK.cellW,0,PLAYER_SIDE_WALK.cellW,PLAYER_SIDE_WALK.cellH,0,0,c.width,c.height);
+  transparentCreamBackground(c,g);
+  return c;
+}
+function makePlayerVerticalWalkFrame(img,cfg,col){
+  const c=document.createElement('canvas'),g=c.getContext('2d');
+  c.width=cfg.cellW;c.height=cfg.cellH;
+  g.drawImage(img,col*cfg.cellW,0,cfg.cellW,cfg.cellH,0,0,c.width,c.height);
   transparentCreamBackground(c,g);
   return c;
 }
@@ -512,6 +557,14 @@ function drawPlayer(sx,sy){
     const frame=PLAYER_SIDE_WALK.frames[idx];
     if(frame){drawPlayerSideWalkFrame(frame,sx,sy,P.dir);return;}
   }
+  if(USE_VERTICAL_WALK&&P.moving&&(P.dir==='up'||P.dir==='down')){
+    const cfg=PLAYER_VERTICAL_WALK[P.dir];
+    if(cfg&&cfg.ready){
+      const idx=PLAYER_VERTICAL_WALK.sequence[Math.floor(P.anim/10)%PLAYER_VERTICAL_WALK.sequence.length];
+      const frame=cfg.frames[idx];
+      if(frame){drawPlayerVerticalWalkFrame(frame,cfg,sx,sy);return;}
+    }
+  }
   const frame=PLAYER_IDLE.frames[P.dir]||PLAYER_IDLE.frames.down;
   if(!PLAYER_IDLE.ready||!frame){drawPlayerFallback(sx,sy);return;}
   const drawH=PLAYER_IDLE.drawH,drawW=PLAYER_IDLE.cellW/PLAYER_IDLE.cellH*drawH;
@@ -535,6 +588,13 @@ function drawPlayerSideWalkFrame(frame,sx,sy,dir){
   }else{
     ctx.drawImage(frame,drawX,drawY,drawW,drawH);
   }
+}
+function drawPlayerVerticalWalkFrame(frame,cfg,sx,sy){
+  const drawH=cfg.drawH,drawW=cfg.cellW/cfg.cellH*drawH;
+  const drawX=sx-drawW/2+cfg.offset.x,drawY=sy-drawH+cfg.offset.y;
+  ctx.fillStyle='rgba(0,0,0,.24)';
+  ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
+  ctx.drawImage(frame,drawX,drawY,drawW,drawH);
 }
 function drawNPC(n,sx,sy){
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+14,5.5,2.2,0,0,7);ctx.fill();
@@ -963,6 +1023,7 @@ function render(){
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
 loadPlayerIdleSprite();
 loadPlayerSideWalkSprite();
+loadPlayerVerticalWalkSprites();
 loadBackgroundImages();
 enterScene('sando',false);
 updateCatCount();loop();
