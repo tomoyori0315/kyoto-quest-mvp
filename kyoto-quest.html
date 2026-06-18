@@ -241,6 +241,47 @@ function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
 function hash(x,y){let n=(x*374761393+y*668265263)>>>0;n=(n^(n>>13))*1274126177>>>0;return((n^(n>>16))>>>0)/4294967295;}
 
+const PLAYER_IDLE={
+  src:'assets/sprites/player-idle-4dir.png',
+  img:new Image(),
+  ready:false,
+  dirs:['down','up','left','right'],
+  cellW:627,
+  cellH:627,
+  drawH:30,
+  offsets:{
+    down:{x:-2,y:3},
+    up:{x:1,y:3},
+    left:{x:3,y:3},
+    right:{x:4,y:4}
+  },
+  frames:{}
+};
+function loadPlayerIdleSprite(){
+  const img=PLAYER_IDLE.img;
+  img.onload=()=>{
+    for(let col=0;col<PLAYER_IDLE.dirs.length;col++){
+      const dir=PLAYER_IDLE.dirs[col],frame=makePlayerIdleFrame(img,col);
+      PLAYER_IDLE.frames[dir]=frame;
+    }
+    PLAYER_IDLE.ready=true;
+  };
+  img.src=PLAYER_IDLE.src;
+}
+function makePlayerIdleFrame(img,col){
+  const c=document.createElement('canvas'),g=c.getContext('2d');
+  c.width=PLAYER_IDLE.cellW;c.height=PLAYER_IDLE.cellH;
+  g.drawImage(img,col*PLAYER_IDLE.cellW,0,PLAYER_IDLE.cellW,PLAYER_IDLE.cellH,0,0,c.width,c.height);
+  try{
+    const data=g.getImageData(0,0,c.width,c.height),p=data.data;
+    for(let i=0;i<p.length;i+=4){
+      if(p[i]>232&&p[i+1]>212&&p[i+2]>175)p[i+3]=0;
+    }
+    g.putImageData(data,0,0);
+  }catch(_){}
+  return c;
+}
+
 //============ 背景パーツ ============
 function trees(x,y,w,h,base,hi,sh){
   for(let i=0;i<w*h/24;i++){
@@ -409,7 +450,7 @@ function drawSenbon(camY){
 }
 
 //============ キャラ・猫 ============
-function drawPlayer(sx,sy){
+function drawPlayerFallback(sx,sy){
   const walk=P.moving&&((P.anim>>3)&1),leg=walk?1:0;
   const skin='#e8c4a0',hair='#3a2a1c',shirt='#3e7ab0',pants='#3a4658',bag='#b5662e';
   ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(sx,sy+15,6,2.4,0,0,7);ctx.fill();
@@ -430,6 +471,15 @@ function drawPlayer(sx,sy){
     R(x-3,sy+2,3,4+leg,pants);R(x+1,sy+2,3,4-leg,pants);
     ctx.restore();
   }
+}
+function drawPlayer(sx,sy){
+  const frame=PLAYER_IDLE.frames[P.dir]||PLAYER_IDLE.frames.down;
+  if(!PLAYER_IDLE.ready||!frame){drawPlayerFallback(sx,sy);return;}
+  const drawH=PLAYER_IDLE.drawH,drawW=PLAYER_IDLE.cellW/PLAYER_IDLE.cellH*drawH;
+  const off=PLAYER_IDLE.offsets[P.dir]||{x:0,y:0};
+  ctx.fillStyle='rgba(0,0,0,.24)';
+  ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
+  ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
 }
 function drawNPC(n,sx,sy){
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+14,5.5,2.2,0,0,7);ctx.fill();
@@ -856,6 +906,7 @@ function render(){
   if(game.debug)drawDebug(camY);
 }
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
+loadPlayerIdleSprite();
 loadBackgroundImages();
 enterScene('sando',false);
 updateCatCount();loop();
