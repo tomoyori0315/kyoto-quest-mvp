@@ -271,17 +271,22 @@ const PLAYER_SIDE_WALK={
   },
   frames:[]
 };
-const USE_VERTICAL_WALK=false;
+const USE_VERTICAL_WALK=true;
 const PLAYER_VERTICAL_WALK={
-  sequence:[0,1,2,1],
+  sequence:['stepA','idle','stepB','idle'],
+  frameCols:{stepA:0,idle:1,stepB:2},
   up:{
     src:'assets/sprites/player-walk-up.png',
     img:new Image(),
     ready:false,
     cellW:724,
     cellH:724,
-    drawH:30,
-    offset:{x:1,y:5},
+    drawH:34,
+    frameOffsets:{
+      stepA:{x:-3,y:4},
+      idle:{x:1,y:5},
+      stepB:{x:5,y:4}
+    },
     frames:[]
   },
   down:{
@@ -290,8 +295,12 @@ const PLAYER_VERTICAL_WALK={
     ready:false,
     cellW:724,
     cellH:724,
-    drawH:30,
-    offset:{x:1,y:4},
+    drawH:34,
+    frameOffsets:{
+      stepA:{x:-3,y:5},
+      idle:{x:1,y:5},
+      stepB:{x:5,y:5}
+    },
     frames:[]
   }
 };
@@ -321,10 +330,12 @@ function loadPlayerVerticalWalkSprites(){
     const cfg=PLAYER_VERTICAL_WALK[dir],img=cfg.img;
     img.onload=()=>{
       cfg.ready=false;
-      cfg.frames=[];
+      cfg.frames={};
       if(img.naturalWidth<cfg.cellW*3||img.naturalHeight<cfg.cellH)return;
-      for(let col=0;col<3;col++)cfg.frames[col]=makePlayerVerticalWalkFrame(img,cfg,col);
-      cfg.ready=cfg.frames.length===3&&cfg.frames.every(Boolean);
+      for(const name of PLAYER_VERTICAL_WALK.sequence){
+        if(!cfg.frames[name])cfg.frames[name]=makePlayerVerticalWalkFrame(img,cfg,PLAYER_VERTICAL_WALK.frameCols[name]);
+      }
+      cfg.ready=PLAYER_VERTICAL_WALK.sequence.every(name=>cfg.frames[name]);
     };
     img.onerror=()=>{cfg.ready=false;};
     img.src=cfg.src;
@@ -560,9 +571,9 @@ function drawPlayer(sx,sy){
   if(USE_VERTICAL_WALK&&P.moving&&(P.dir==='up'||P.dir==='down')){
     const cfg=PLAYER_VERTICAL_WALK[P.dir];
     if(cfg&&cfg.ready){
-      const idx=PLAYER_VERTICAL_WALK.sequence[Math.floor(P.anim/10)%PLAYER_VERTICAL_WALK.sequence.length];
-      const frame=cfg.frames[idx];
-      if(frame){drawPlayerVerticalWalkFrame(frame,cfg,sx,sy);return;}
+      const frameName=PLAYER_VERTICAL_WALK.sequence[Math.floor(P.anim/10)%PLAYER_VERTICAL_WALK.sequence.length];
+      const frame=cfg.frames[frameName];
+      if(frame){drawPlayerVerticalWalkFrame(frame,cfg,frameName,sx,sy);return;}
     }
   }
   const frame=PLAYER_IDLE.frames[P.dir]||PLAYER_IDLE.frames.down;
@@ -589,9 +600,10 @@ function drawPlayerSideWalkFrame(frame,sx,sy,dir){
     ctx.drawImage(frame,drawX,drawY,drawW,drawH);
   }
 }
-function drawPlayerVerticalWalkFrame(frame,cfg,sx,sy){
+function drawPlayerVerticalWalkFrame(frame,cfg,frameName,sx,sy){
   const drawH=cfg.drawH,drawW=cfg.cellW/cfg.cellH*drawH;
-  const drawX=sx-drawW/2+cfg.offset.x,drawY=sy-drawH+cfg.offset.y;
+  const off=cfg.frameOffsets[frameName]||cfg.frameOffsets.idle||{x:0,y:0};
+  const drawX=sx-drawW/2+off.x,drawY=sy-drawH+off.y;
   ctx.fillStyle='rgba(0,0,0,.24)';
   ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
   ctx.drawImage(frame,drawX,drawY,drawW,drawH);
