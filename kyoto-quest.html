@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>京都クエスト 〜伏見稲荷〜</title>
+<style>
+  :root{
+    --vermillion:#c4402a; --vermillion-d:#8a2818;
+    --wood:#7a4b2a; --wood-d:#5a3418;
+    --washi:#f0e6cf; --washi-d:#e0d2b0;
+    --ink:#2a2018; --gold:#d9a93a; --ui-line:#caa35f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;background:#1a140e;}
+  body{display:flex;align-items:center;justify-content:center;
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic','YuGothic','Meiryo',sans-serif;
+    background:radial-gradient(circle at 30% 20%,#241a12 0%,#14100b 80%);}
+  #wrap{position:relative;width:100vw;height:100vh;
+    max-width:min(100vw,calc(100vh*0.5625));max-height:min(100vh,calc(100vw*1.7778));
+    aspect-ratio:9/16;background:#000;
+    box-shadow:0 0 0 3px var(--wood-d),0 0 40px rgba(0,0,0,.7);overflow:hidden;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;
+    image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
+
+  .panel{background:linear-gradient(180deg,var(--washi) 0%,var(--washi-d) 100%);
+    border:2px solid var(--ui-line);border-radius:8px;
+    box-shadow:0 2px 0 rgba(90,52,24,.5),inset 0 1px 0 rgba(255,255,255,.4);color:var(--ink);}
+  #hud-top{position:absolute;top:0;left:0;right:0;
+    padding:calc(env(safe-area-inset-top) + 8px) 8px 0;display:flex;gap:6px;align-items:flex-start;
+    pointer-events:none;z-index:20;}
+  #area-name{flex:1;display:flex;align-items:center;gap:7px;padding:7px 10px;
+    font-weight:700;font-size:clamp(13px,3.8vw,17px);letter-spacing:.04em;}
+  #area-name .torii{width:18px;height:16px;flex:none;}
+  #cat-count{padding:7px 9px;font-weight:700;font-size:clamp(12px,3.6vw,16px);
+    display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  #book-btn{width:clamp(40px,11vw,52px);height:clamp(40px,11vw,52px);padding:5px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    pointer-events:auto;cursor:pointer;flex:none;}
+  #book-btn .ico{font-size:clamp(18px,5vw,22px);line-height:1;}
+  #book-btn .lbl{font-size:9px;font-weight:700;}
+  #book-btn:active{transform:translateY(1px);}
+  #quest-bar{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 56px);max-width:64%;
+    padding:7px 11px;font-size:clamp(11px,3.2vw,14px);line-height:1.45;color:var(--ink);
+    z-index:18;pointer-events:none;display:flex;gap:7px;align-items:flex-start;}
+  #quest-bar .q-ico{flex:none;font-size:14px;}
+  #quest-bar b{color:var(--vermillion-d);}
+
+  #controls{position:absolute;left:0;right:0;bottom:0;
+    padding:0 10px calc(env(safe-area-inset-bottom) + 12px);
+    display:flex;justify-content:space-between;align-items:flex-end;z-index:20;pointer-events:none;}
+  #dpad{position:relative;width:132px;height:132px;pointer-events:auto;flex:none;touch-action:none;}
+  .dbtn{position:absolute;width:44px;height:44px;background:linear-gradient(180deg,#f3ead4,#dcc9a4);
+    border:2px solid var(--ui-line);color:var(--wood-d);display:flex;align-items:center;justify-content:center;
+    font-size:18px;box-shadow:0 2px 0 rgba(90,52,24,.5);}
+  .dbtn:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(90,52,24,.5);}
+  #d-up{top:0;left:44px;border-radius:10px 10px 4px 4px;}
+  #d-down{bottom:0;left:44px;border-radius:4px 4px 10px 10px;}
+  #d-left{top:44px;left:0;border-radius:10px 4px 4px 10px;}
+  #d-right{top:44px;right:0;border-radius:4px 10px 10px 4px;}
+  #d-center{top:44px;left:44px;width:44px;height:44px;
+    background:radial-gradient(circle,#e8d8b4,#cdb888);border:2px solid var(--ui-line);}
+  #act-cluster{display:flex;gap:9px;align-items:flex-end;pointer-events:auto;padding-bottom:6px;}
+  .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+  .act .circle{width:clamp(48px,13vw,58px);height:clamp(48px,13vw,58px);border-radius:50%;
+    background:linear-gradient(180deg,#f3ead4,#d8c39c);border:3px solid var(--ui-line);
+    display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6vw,26px);
+    box-shadow:0 3px 0 rgba(90,52,24,.5),inset 0 1px 0 rgba(255,255,255,.5);position:relative;}
+  .act .lbl{font-size:10px;font-weight:700;color:var(--washi);text-shadow:0 1px 2px rgba(0,0,0,.8);}
+  .act:active .circle{transform:translateY(2px);box-shadow:0 1px 0 rgba(90,52,24,.5);}
+  .act.primary .circle{background:linear-gradient(180deg,#e9694a,#c4402a);border-color:#e9a060;}
+  .act.primary .lbl{color:#fff;}
+  .act.disabled{opacity:.4;pointer-events:none;}
+
+  #dialog{position:absolute;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:30;display:none;}
+  #dialog.show{display:block;animation:slideUp .18s ease-out;}
+  @keyframes slideUp{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  #dialog .box{background:linear-gradient(180deg,#fbf4e2,#efe1c2);border:3px solid var(--wood);
+    border-radius:12px;box-shadow:0 4px 0 var(--wood-d),0 6px 16px rgba(0,0,0,.5);padding:14px 16px 16px;position:relative;}
+  #dialog .speaker{position:absolute;top:-14px;left:14px;background:var(--vermillion);color:#fff;
+    font-weight:700;font-size:13px;padding:3px 13px;border-radius:7px;border:2px solid #e9a060;
+    box-shadow:0 2px 0 var(--vermillion-d);}
+  #dialog .speaker.cat{background:var(--gold);border-color:#f0d27a;color:#3a2a10;box-shadow:0 2px 0 #a87c1e;}
+  #dialog .text{color:var(--ink);font-size:clamp(14px,4vw,17px);line-height:1.65;min-height:3.3em;
+    margin-top:6px;white-space:pre-wrap;font-weight:500;}
+  #dialog .more-tag{display:inline-block;margin-top:6px;font-size:12px;color:var(--vermillion-d);
+    font-weight:700;text-decoration:underline;cursor:pointer;}
+  #dialog .next{position:absolute;right:14px;bottom:10px;color:var(--vermillion);font-size:18px;animation:bob .8s infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(3px);}}
+  #dialog .learn{margin-top:8px;padding:8px 10px;background:rgba(217,169,58,.18);
+    border-left:3px solid var(--gold);border-radius:5px;font-size:13px;line-height:1.55;color:#5a4418;display:none;}
+  #dialog .learn.show{display:block;}
+  #dialog .learn b{color:var(--vermillion-d);}
+
+  #book{position:absolute;inset:0;z-index:40;display:none;background:rgba(20,14,8,.7);
+    backdrop-filter:blur(2px);padding:calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 20px);}
+  #book.show{display:flex;flex-direction:column;animation:fade .2s;}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  #book .cover{background:linear-gradient(160deg,#f5ecd6,#e6d4ae);border:3px solid var(--wood);
+    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.6);flex:1;display:flex;flex-direction:column;
+    overflow:hidden;position:relative;}
+  #book .cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;
+    background:linear-gradient(90deg,var(--vermillion),var(--vermillion-d));box-shadow:inset -2px 0 4px rgba(0,0,0,.3);}
+  #book h2{font-size:18px;color:var(--ink);text-align:center;padding:16px 16px 8px 22px;font-weight:700;letter-spacing:.08em;}
+  #book .tabs{display:flex;gap:6px;padding:0 16px 10px 22px;}
+  #book .tab{flex:1;padding:7px;text-align:center;font-size:12px;font-weight:700;background:var(--washi-d);
+    border:2px solid var(--ui-line);border-radius:7px;color:var(--wood-d);cursor:pointer;}
+  #book .tab.active{background:var(--vermillion);color:#fff;border-color:#e9a060;}
+  #book .pages{flex:1;overflow-y:auto;padding:4px 16px 16px 22px;}
+  #book .entry{background:rgba(255,255,255,.5);border:1px solid var(--ui-line);border-radius:8px;
+    padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.5;color:var(--ink);display:flex;gap:9px;align-items:flex-start;}
+  #book .entry .e-ico{font-size:20px;flex:none;}
+  #book .entry b{color:var(--vermillion-d);display:block;margin-bottom:2px;font-size:14px;}
+  #book .empty{text-align:center;color:#9a8868;padding:30px 10px;font-size:13px;line-height:1.7;}
+  #book .close{margin:0 16px 0 22px;padding:11px;text-align:center;background:var(--wood);color:#fff;
+    font-weight:700;border-radius:9px;cursor:pointer;box-shadow:0 3px 0 var(--wood-d);font-size:15px;}
+  #book .close:active{transform:translateY(2px);box-shadow:0 1px 0 var(--wood-d);}
+
+  #toast-layer{position:absolute;left:0;right:0;top:28%;z-index:35;display:flex;flex-direction:column;
+    align-items:center;gap:8px;pointer-events:none;}
+  .toast{background:linear-gradient(180deg,#fbf4e2,#efe1c2);border:2px solid var(--gold);border-radius:10px;
+    padding:10px 18px;font-size:14px;font-weight:700;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.4);
+    display:flex;align-items:center;gap:8px;text-align:center;
+    animation:toastIn .3s ease-out,toastOut .4s ease-in 1.9s forwards;}
+  @keyframes toastIn{from{transform:scale(.8) translateY(-10px);opacity:0;}to{transform:scale(1);opacity:1;}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(-8px);}}
+  .toast .t-ico{font-size:20px;}
+
+  #title{position:absolute;inset:0;z-index:50;
+    background:linear-gradient(180deg,#2a1810 0%,#48241a 45%,#6a3420 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:20px;}
+  #title.hide{display:none;}
+  #title .torii-big{width:120px;height:108px;margin-bottom:6px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));}
+  #title h1{color:#fbe9c0;font-size:30px;letter-spacing:.14em;font-weight:700;
+    text-shadow:0 3px 0 #6a1810,0 5px 10px rgba(0,0,0,.6);}
+  #title .sub{color:#e9b878;font-size:14px;letter-spacing:.34em;margin-top:2px;}
+  #title .start{margin-top:24px;padding:14px 40px;font-size:17px;font-weight:700;
+    background:linear-gradient(180deg,#f3ead4,#d8c39c);color:var(--wood-d);border:3px solid var(--gold);
+    border-radius:30px;cursor:pointer;box-shadow:0 4px 0 #a87c1e;animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+  #title .hint{color:#c89868;font-size:11px;margin-top:18px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+
+  <div id="hud-top">
+    <div class="panel" id="area-name">
+      <svg class="torii" viewBox="0 0 18 16"><rect x="1" y="2" width="16" height="2.5" fill="#c4402a"/><rect x="2" y="5" width="14" height="1.5" fill="#c4402a"/><rect x="3" y="3" width="2.5" height="13" fill="#c4402a"/><rect x="12.5" y="3" width="2.5" height="13" fill="#c4402a"/></svg>
+      <span id="area-label">伏見稲荷 大鳥居前</span>
+    </div>
+    <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/3</div>
+    <div class="panel" id="book-btn"><span class="ico">📒</span><span class="lbl">帳面</span></div>
+  </div>
+
+  <div class="panel" id="quest-bar">
+    <span class="q-ico">🎯</span>
+    <div><b>次の目標</b><br><span id="quest-text">楼門にお参りしよう</span></div>
+  </div>
+
+  <div id="dialog"><div class="box">
+    <div class="speaker" id="dlg-speaker">案内役</div>
+    <div class="text" id="dlg-text"></div>
+    <div class="learn" id="dlg-learn"></div>
+    <span class="more-tag" id="dlg-more" style="display:none">もっと読む ▾</span>
+    <div class="next" id="dlg-next">▼</div>
+  </div></div>
+
+  <div id="book"><div class="cover">
+    <h2>旅の帳面</h2>
+    <div class="tabs">
+      <div class="tab active" data-tab="cat">🐱 猫帳</div>
+      <div class="tab" data-tab="spot">⛩️ 見聞</div>
+      <div class="tab" data-tab="visit">📿 参拝</div>
+    </div>
+    <div class="pages" id="book-pages"></div>
+    <div class="close" id="book-close">とじる</div>
+  </div></div>
+
+  <div id="controls">
+    <div id="dpad">
+      <div class="dbtn" id="d-up">▲</div>
+      <div class="dbtn" id="d-left">◀</div>
+      <div class="dbtn" id="d-center"></div>
+      <div class="dbtn" id="d-right">▶</div>
+      <div class="dbtn" id="d-down">▼</div>
+    </div>
+    <div id="act-cluster">
+      <div class="act primary disabled" id="act-main">
+        <div class="circle" id="act-icon">🔍</div>
+        <div class="lbl" id="act-label">しらべる</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-layer"></div>
+
+  <div id="title">
+    <svg class="torii-big" viewBox="0 0 100 90">
+      <rect x="6" y="14" width="88" height="11" rx="2" fill="#c4402a"/>
+      <rect x="2" y="11" width="96" height="5" rx="2" fill="#8a2818"/>
+      <rect x="14" y="30" width="72" height="7" rx="1" fill="#c4402a"/>
+      <rect x="18" y="20" width="11" height="68" fill="#c4402a"/>
+      <rect x="71" y="20" width="11" height="68" fill="#c4402a"/>
+      <rect x="16" y="20" width="15" height="4" fill="#8a2818"/>
+      <rect x="69" y="20" width="15" height="4" fill="#8a2818"/>
+    </svg>
+    <h1>京都クエスト</h1>
+    <div class="sub">ふしみいなり</div>
+    <div class="start" id="start-btn">はじめる</div>
+    <div class="hint">十字キーで移動・まるボタンで調べる/話す/なでる<br>近づくとボタンが反応するで</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
+const VW=180, VH=320;
+cvs.width=VW; cvs.height=VH; ctx.imageSmoothingEnabled=false;
+
+// 歩けるエリアは画面とほぼ同じ高さに収める = 神社の眺めが常にフレーム内に入る
+// ワールド縦 360 / 画面 320 / カメラは僅かに追従(ほぼ固定)
+let SCENE='sando';
+let WORLD_H=380;
+const FLOOR={top:196, bot:352};   // 参道の歩ける帯（鳥居の手前〜画面下）
+// シーンごとに歩ける縦範囲が異なる。本殿/千本鳥居は奥(上)まで歩けるようにする。
+function floorTop(){ return SCENE==='sando'?196 : SCENE==='romon'?188 : 150; }
+function floorBot(){ return SCENE==='sando'?352 : SCENE==='romon'?360 : 384; }
+
+let P={x:90,y:300,dir:'up',moving:false,anim:0,speed:1.1};
+let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null};
+
+function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
+function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
+function hash(x,y){let n=(x*374761393+y*668265263)>>>0;n=(n^(n>>13))*1274126177>>>0;return((n^(n>>16))>>>0)/4294967295;}
+
+//============ 背景パーツ ============
+function trees(x,y,w,h,base,hi,sh){
+  for(let i=0;i<w*h/24;i++){
+    const rx=x+hash(i,x)*w, ry=y+hash(i*3,y)*h, rr=2+hash(i*7,x+y)*2.6, t=hash(i*5,x*y);
+    circ(rx,ry,rr,t<0.33?sh:t<0.7?base:hi);
+  }
+}
+function bigTorii(x,y,w,h){
+  const col='#d4452a',dk='#a83020',cap='#27272e';
+  ctx.fillStyle=cap;ctx.beginPath();
+  ctx.moveTo(x-7,y+9);ctx.quadraticCurveTo(x+w/2,y-3,x+w+7,y+9);
+  ctx.lineTo(x+w+7,y+16);ctx.quadraticCurveTo(x+w/2,y+6,x-7,y+16);ctx.closePath();ctx.fill();
+  R(x-5,y+15,w+10,5,col);R(x-5,y+15,w+10,1,'#e8603e');
+  R(x+9,y+34,w-18,8,col);R(x+9,y+34,w-18,1,'#e8603e');R(x+9,y+41,w-18,1,dk);
+  R(x+w/2-7,y+20,14,14,col);R(x+w/2-7,y+20,2,14,dk);R(x+w/2-7,y+20,14,2,'#e8603e');
+  R(x+11,y+34,15,h-34,col);R(x+w-26,y+34,15,h-34,col);
+  R(x+11,y+34,3,h-34,'#e8603e');R(x+w-26,y+34,3,h-34,'#e8603e');
+  R(x+21,y+34,4,h-34,dk);R(x+w-15,y+34,4,h-34,dk);
+  R(x+9,y+h-9,19,9,'#18181e');R(x+w-28,y+h-9,19,9,'#18181e');
+}
+function romonGate(x,y,w,h){
+  ctx.fillStyle='#5a4030';ctx.beginPath();
+  ctx.moveTo(x-7,y+15);ctx.lineTo(x+w/2,y-3);ctx.lineTo(x+w+7,y+15);
+  ctx.lineTo(x+w,y+18);ctx.lineTo(x+w/2,y+5);ctx.lineTo(x,y+18);ctx.closePath();ctx.fill();
+  R(x-3,y+15,w+6,3,'#3a2a1e');
+  R(x+w/2-1,y-8,2,7,'#d9a93a');                 // 千木
+  R(x+6,y+18,w-12,h-30,'#c4402a');R(x+6,y+18,w-12,2,'#e05a3a');
+  R(x+10,y+20,5,h-30,'#a83020');R(x+w-15,y+20,5,h-30,'#a83020');
+  R(x+w/2-9,y+22,18,8,'#e0d2a0');R(x+w/2-8,y+24,16,1,'#b89858');   // 扁額
+  R(x+w/2-9,y+32,18,h-44,'#352618');            // 入口の暗がり
+  R(x+8,y+16,w-16,2,'#7a5030');
+  R(x+17,y+28,3,5,'#e8d088');R(x+w-20,y+28,3,5,'#e8d088'); // 提灯
+}
+function lantern(cx,cy){
+  R(cx-1,cy+14,3,4,'#8a8278');R(cx-2,cy+11,5,3,'#9a9288');
+  R(cx-3,cy+6,7,5,'#aaa296');R(cx-2,cy+7,5,3,'#5a5248');R(cx-1,cy+8,2,2,'#e8c868');
+  ctx.fillStyle='#b8b0a4';ctx.beginPath();ctx.moveTo(cx-4,cy+4);ctx.lineTo(cx,cy);ctx.lineTo(cx+5,cy+4);ctx.closePath();ctx.fill();
+  R(cx-4,cy+3,9,2,'#c2bab0');
+}
+function signboard(cx,cy){
+  R(cx,cy+18,2,9,'#6a4a2a');R(cx+13,cy+18,2,9,'#6a4a2a');
+  R(cx-3,cy,21,20,'#7a5430');R(cx-1,cy+2,17,16,'#d8e0cc');
+  R(cx+1,cy+5,5,4,'#9ab488');R(cx+9,cy+4,4,5,'#b8c89a');R(cx+2,cy+11,10,1,'#5a8a4a');
+  R(cx-1,cy,17,3,'#5a3a20');
+}
+function foxStatue(cx,cy,flip){
+  ctx.save();if(flip){ctx.translate(cx*2,0);ctx.scale(-1,1);}
+  const x=cx;
+  R(x-5,cy+12,12,6,'#8a8278');R(x-5,cy+12,12,1,'#9a9288');
+  R(x-4,cy+4,9,9,'#cfc8bc');R(x-4,cy+4,9,2,'#ddd6ca');
+  R(x-3,cy-2,7,7,'#cfc8bc');
+  R(x-3,cy-5,2,3,'#cfc8bc');R(x+2,cy-5,2,3,'#cfc8bc');
+  R(x-1,cy,1,1,'#3a2a1e');R(x+2,cy,1,1,'#3a2a1e');R(x,cy+2,2,1,'#3a2a1e');
+  R(x-4,cy+6,9,4,'#c4402a');R(x-4,cy+6,9,1,'#e05a3a');
+  R(x+4,cy+3,3,8,'#cfc8bc');
+  ctx.restore();
+}
+function shopsLeft(x,y,w,h){
+  let cy=y;const tones=[['#8a5a34','#6a4424'],['#7a4e2e','#5a3a20'],['#946038','#704826']];
+  for(let i=0;cy<y+h;i++){
+    const sh=tones[i%3],bh=46;
+    R(x-2,cy,w+2,7,'#5a6a64');R(x-2,cy,w+2,2,'#6f7f78');
+    for(let rx=x;rx<x+w;rx+=4)R(rx,cy+2,1,5,'#48564f');
+    R(x,cy+7,w,bh-7,sh[0]);R(x,cy+7,w,2,sh[1]);
+    R(x+w-12,cy+12,10,15,'#c4402a');R(x+w-11,cy+15,8,1,'#e8d8b8');R(x+w-11,cy+19,8,1,'#e8d8b8');
+    R(x+4,cy+10,4,6,'#d86850');R(x+4,cy+10,4,1,'#3a2a1e');
+    R(x+3,cy+24,12,12,'#3a2c1e');for(let k=0;k<4;k++)R(x+3+k*3,cy+24,1,12,'#5a4a38');
+    cy+=bh;
+  }
+  R(x+w,y,3,h,'rgba(40,30,20,.25)');
+}
+function rightSide(x,y,w,h){
+  for(let fy=y;fy<y+44;fy+=10){R(x+2,fy,3,9,'#c4402a');R(x+10,fy,3,9,'#c4402a');}
+  R(x+2,y,w-4,3,'#a83020');
+  const uy=y+54;
+  R(x+6,uy+14,3,12,'#7a4b2a');
+  ctx.fillStyle='#c4402a';ctx.beginPath();ctx.moveTo(x-2,uy+14);ctx.lineTo(x+8,uy+2);ctx.lineTo(x+18,uy+14);ctx.closePath();ctx.fill();
+  R(x-2,uy+14,20,2,'#a83020');R(x-2,uy+26,18,8,'#b03828');R(x-2,uy+26,18,2,'#c4402a');
+  let cy=uy+42;
+  while(cy<y+h){R(x-2,cy,w,6,'#5a6a64');R(x,cy+6,w-2,38,'#7a4e2e');R(x,cy+6,w-2,2,'#5a3a20');
+    R(x+3,cy+20,12,12,'#3a2c1e');cy+=46;}
+  R(x-3,y,3,h,'rgba(40,30,20,.22)');
+}
+function stonePath(top,bot){
+  R(26,top,128,bot-top+4,'#c8bca2');R(52,top,76,bot-top+4,'#d2c7ad');
+  for(let gy=top;gy<bot+4;gy+=11){
+    const off=((gy/11)|0)%2*7;
+    for(let gx=26;gx<154;gx+=14){
+      const n=hash(gx,gy);
+      R(gx+off,gy,13,10,n<0.5?'#c5b99e':'#cabea3');
+      R(gx+off,gy,13,1,'#d8cdb2');R(gx+off,gy,1,10,'#bcb094');
+    }
+  }
+  R(26,top,3,bot-top+4,'#a89878');R(151,top,3,bot-top+4,'#a89878');
+}
+
+//============ シーン背景 ============
+function drawSando(camY){
+  const g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#cfe0d8');g.addColorStop(.35,'#dfe6d2');g.addColorStop(1,'#cdbfa0');
+  ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
+  ctx.save();ctx.translate(0,-camY);
+  R(0,0,180,70,'#9fb48a');
+  trees(0,18,180,90,'#5f8a4a','#79a861','#3f6432');
+  trees(0,40,180,75,'#557e42','#6f9c56','#385a2c');
+  romonGate(50,40,80,60);                 // 楼門（奥）
+  for(let i=0;i<6;i++){const sy=104+i*5;R(54,sy,72,5,i%2?'#cfc4ad':'#c2b69c');R(54,sy,72,1,'#ddd2ba');}
+  bigTorii(36,128,108,120);               // 大鳥居（見せ場）
+  stonePath(FLOOR.top,FLOOR.bot);
+  shopsLeft(0,FLOOR.top,46,FLOOR.bot-FLOOR.top+10);
+  rightSide(134,FLOOR.top,46,FLOOR.bot-FLOOR.top+10);
+  lantern(42,FLOOR.top+18);lantern(138,FLOOR.top+18);
+  lantern(48,FLOOR.top+96);lantern(132,FLOOR.top+96);
+  signboard(150,FLOOR.top+60);
+  foxStatue(52,FLOOR.top-2,false);
+  foxStatue(128,FLOOR.top-2,true);
+  ctx.restore();
+}
+function drawRomon(camY){
+  const g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#c8dcd2');g.addColorStop(1,'#cbbd9e');ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
+  ctx.save();ctx.translate(0,-camY);
+  trees(0,0,180,70,'#557e42','#6f9c56','#385a2c');
+  // 本殿（中央・大きく）
+  hondenSprite(45,52,90,80);
+  R(26,150,128,230,'#c8bca2');
+  stonePath(150,372);
+  temizu(128,196);
+  foxStatue(46,176,false);
+  lantern(42,228);lantern(138,228);
+  ctx.restore();
+}
+function hondenSprite(x,y,w,h){
+  ctx.fillStyle='#5a4030';ctx.beginPath();
+  ctx.moveTo(x-9,y+22);ctx.lineTo(x+w/2,y-5);ctx.lineTo(x+w+9,y+22);
+  ctx.lineTo(x+w,y+26);ctx.lineTo(x+w/2,y+6);ctx.lineTo(x,y+26);ctx.closePath();ctx.fill();
+  R(x-4,y+22,w+8,4,'#3a2a1e');
+  R(x+w/2-1,y-12,2,9,'#d9a93a');
+  R(x+w/2-9,y-2,5,3,'#caa35f');R(x+w/2+4,y-2,5,3,'#caa35f');
+  R(x+8,y+26,w-16,h-40,'#c4402a');R(x+8,y+26,w-16,2,'#e05a3a');
+  R(x+12,y+28,5,h-44,'#a83020');R(x+w-17,y+28,5,h-44,'#a83020');
+  R(x+12,y+30,w-24,3,'#d8cdb2');                 // 注連縄
+  R(x+w/2-12,y+38,24,h-56,'#352618');            // 内陣
+  R(x+w/2-14,y+h-16,28,8,'#6a4a2a');R(x+w/2-16,y+h-8,32,6,'#7a5a3a'); // 賽銭箱・階段
+}
+function temizu(x,y){
+  R(x-2,y+14,3,8,'#7a5430');R(x+10,y+14,3,8,'#7a5430');
+  ctx.fillStyle='#5a4030';ctx.beginPath();ctx.moveTo(x-5,y);ctx.lineTo(x+5,y-5);ctx.lineTo(x+15,y);ctx.closePath();ctx.fill();
+  R(x-4,y,18,4,'#4a3528');R(x-2,y+8,14,7,'#7a8278');R(x,y+10,10,3,'#5a8aa8');
+}
+function drawSenbon(camY){
+  ctx.fillStyle='#34241c';ctx.fillRect(0,0,VW,VH);
+  ctx.save();ctx.translate(0,-camY);
+  R(26,0,128,400,'#9a8068');stonePath(0,400);
+  for(let i=13;i>=0;i--){
+    const z=i/13,cy=40+i*26,tw=44+z*58,tx=90-tw/2,th=64+z*36;
+    const col=`rgb(${190-(z*22)|0},${60-(z*12)|0},${42-(z*10)|0})`;
+    R(tx,cy,6+z*4,th,col);R(tx+tw-(6+z*4),cy,6+z*4,th,col);
+    R(tx-4,cy,tw+8,5+z*3,col);R(tx-2,cy-4,tw+4,4,'#27272e');
+    R(tx,cy+13+z*8,tw,3+z*2,col);
+  }
+  ctx.restore();
+  const vg=ctx.createRadialGradient(90,150,30,90,150,150);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(20,10,6,.5)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,VW,VH);
+}
+
+//============ キャラ・猫 ============
+function drawPlayer(sx,sy){
+  const walk=P.moving&&((P.anim>>3)&1),leg=walk?1:0;
+  const skin='#e8c4a0',hair='#3a2a1c',shirt='#3e7ab0',pants='#3a4658',bag='#b5662e';
+  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(sx,sy+15,6,2.4,0,0,7);ctx.fill();
+  if(P.dir==='up'){
+    R(sx-4,sy-12,8,5,hair);R(sx-5,sy-7,10,9,shirt);R(sx-4,sy-6,8,7,bag);
+    R(sx-3,sy-4,2,3,'#8a4a20');R(sx+1,sy-4,2,3,'#8a4a20');
+    R(sx-4,sy+2,4,4+leg,pants);R(sx,sy+2,4,4-leg,pants);
+  }else if(P.dir==='down'){
+    R(sx-4,sy-12,8,6,hair);R(sx-3,sy-9,6,4,skin);
+    R(sx-2,sy-7,1,1,'#2a1c12');R(sx+1,sy-7,1,1,'#2a1c12');
+    R(sx-5,sy-5,10,8,shirt);R(sx-6,sy-4,2,6,bag);R(sx+4,sy-4,2,6,bag);
+    R(sx-4,sy+2,4,4+leg,pants);R(sx,sy+2,4,4-leg,pants);
+  }else{
+    const f=P.dir==='left';ctx.save();if(f){ctx.translate(sx*2,0);ctx.scale(-1,1);}
+    const x=sx;
+    R(x-4,sy-12,8,6,hair);R(x-1,sy-9,5,4,skin);R(x+2,sy-7,1,1,'#2a1c12');
+    R(x-5,sy-5,9,8,shirt);R(x-6,sy-4,3,7,bag);
+    R(x-3,sy+2,3,4+leg,pants);R(x+1,sy+2,3,4-leg,pants);
+    ctx.restore();
+  }
+}
+function drawNPC(n,sx,sy){
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+14,5.5,2.2,0,0,7);ctx.fill();
+  const skin=n.skin||'#e8c4a0';
+  R(sx-4,sy-12,8,5,n.hair||'#2a2018');
+  if(n.hat){R(sx-5,sy-13,10,3,n.hat);R(sx-6,sy-11,12,2,n.hat);}
+  R(sx-3,sy-9,6,4,skin);R(sx-2,sy-7,1,1,'#2a1c12');R(sx+1,sy-7,1,1,'#2a1c12');
+  R(sx-5,sy-5,10,8,n.color);R(sx-5,sy-5,10,2,n.color2||n.color);
+  if(n.apron)R(sx-4,sy-1,8,4,n.apron);
+  R(sx-4,sy+2,4,4,n.pants||'#3a3a42');R(sx,sy+2,4,4,n.pants||'#3a3a42');
+}
+function drawCat(c,sx,sy){
+  if(game.cats[c.id]){R(sx-1,sy-13,2,2,'#e06060');R(sx-3,sy-12,2,1,'#e06060');R(sx+1,sy-12,2,1,'#e06060');}
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+6,6,2,0,0,7);ctx.fill();
+  const b=c.body||'#d89048',d='#3a2a1e';
+  // 丸い体（伏せ気味）
+  R(sx-5,sy,11,6,b);R(sx-5,sy,11,2,'#00000010');
+  R(sx-5,sy+4,11,2,b);
+  // 頭（丸め）
+  R(sx-4,sy-6,8,6,b);R(sx-4,sy-6,8,1,'#ffffff18');
+  // 耳（小さく内寄り）
+  R(sx-4,sy-8,2,3,b);R(sx+2,sy-8,2,3,b);
+  R(sx-4,sy-8,2,1,'#00000022');R(sx+2,sy-8,2,1,'#00000022');
+  // 三毛
+  if(c.calico){R(sx-4,sy-6,3,4,'#f0e6d6');R(sx+2,sy,3,5,d);R(sx-4,sy+2,2,3,'#c87838');}
+  // 顔
+  R(sx-2,sy-4,1,1,d);R(sx+1,sy-4,1,1,d);R(sx-1,sy-2,2,1,'#c46a5a');
+  // 前足
+  R(sx-4,sy+5,2,2,b);R(sx+2,sy+5,2,2,b);
+  // しっぽ
+  const tw=Math.sin(P.anim*0.08+sx)*1.6;
+  R(sx+5,sy-1+tw,2,5,b);R(sx+5,sy+3,3,2,b);
+}
+
+//============ エンティティ ============
+let ENTITIES=[];
+const SANDO_ENTITIES=[
+  {id:'guide',type:'npc',x:120,y:300,r:22,
+   sprite:{color:'#3a6ea5',color2:'#2a5a90',pants:'#2a3038'},name:'案内のおじさん',act:'はなす',
+   lines:[{t:'ようおまいり！\nここが伏見稲荷の大鳥居やで。\nでかいやろ〜。'},
+     {t:'鳥居をくぐる時はな、端を通って\n軽く一礼。真ん中は神さまの\n通り道やで。',
+      learn:'<b>豆知識：鳥居の意味</b>\n鳥居は俗世と神域の境目。くぐる時に気持ちを切り替えるんやて。',spot:'torii_manner'},
+     {t:'奥の楼門でお参りしてき。\nその先には有名な千本鳥居も\n待ってるで。'}]},
+  {id:'student',type:'npc',x:62,y:250,r:20,
+   sprite:{color:'#5a8a4a',color2:'#4a7a3a',hair:'#3a2a18',hat:'#d8c89a',pants:'#6a5a3a'},name:'修学旅行生',act:'はなす',
+   lines:[{t:'うわ、鳥居めっちゃ赤い！\n写真いっぱい撮っちゃった。'},
+     {t:'班行動でここ集合なんだ。\nお守り買って帰ろうかな〜。'}]},
+  {id:'chaya',type:'npc',x:30,y:330,r:20,
+   sprite:{color:'#9a4a3a',color2:'#7a3a2a',apron:'#e0d2b0',pants:'#4a3a2a'},name:'茶屋のおばちゃん',act:'はなす',
+   lines:[{t:'おこしやす。うちは稲荷せんべい\n売ってるえ。焼きたては\n香ばしいで〜。'},
+     {t:'狐の顔の形したせんべいも\nあるんよ。お土産にどうぞ。',
+      learn:'<b>豆知識：稲荷せんべい</b>\n参道名物の瓦せんべい。狐のお面の形に焼いたものもあるんやて。',spot:'senbei'}]},
+  {id:'tourist',type:'npc',x:150,y:320,r:18,
+   sprite:{color:'#c89030',color2:'#a87820',skin:'#e8b48a',hair:'#5a4030',hat:'#e8e0d0',pants:'#5a6a7a'},name:'外国人観光客',act:'はなす',
+   lines:[{t:'コンニチハ！センボントリイ、\nトテモ ビューティフル デスネ！'},
+     {t:'(身ぶり手ぶりで楼門の方を\n 指している)\nThank you! 行ってきます！'}]},
+  {id:'cat_torii',type:'cat',x:96,y:286,r:18,sprite:{body:'#d89048',calico:true},name:'気まぐれ猫',act:'なでる',
+   react:'…ゴロゴロ。\n(撫でられて満足そう)',learn:'鳥居の根元がお気に入りの昼寝スポットらしい。'},
+  {id:'cat_shop',type:'cat',x:40,y:340,r:16,sprite:{body:'#5a5a5a'},name:'人懐っこい猫',act:'なでる',
+   react:'にゃ〜ん♪\n(すり寄ってきた)',learn:'茶屋の前に住む看板猫。撫でられるのが大好き。'},
+  {id:'cat_lantern',type:'cat',x:140,y:300,r:16,sprite:{body:'#e8d088'},name:'落ち着いた猫',act:'なでる',
+   react:'(目を細めて\n のんびりしている)',learn:'灯籠の陰で日向ぼっこするマイペースな猫。'},
+  {id:'obj_torii',type:'object',x:90,y:236,r:24,name:'大鳥居',act:'しらべる',
+   lines:[{t:'見上げるほど大きな朱色の鳥居。\nくぐると、いよいよ神さまの\n領域や。',
+     learn:'<b>大鳥居</b>\n朱色は魔除けと生命力の象徴。連なる朱の鳥居が伏見稲荷の名物やね。',spot:'big_torii'}]},
+  {id:'obj_sign',type:'object',x:150,y:262,r:18,name:'境内案内図',act:'しらべる',
+   lines:[{t:'境内の案内図や。\n楼門→本殿→千本鳥居→奥社→\n四ツ辻→一ノ峰…と続いてる。',
+     learn:'<b>お山めぐり</b>\n本殿から山頂まで一周約2時間。お山全体が信仰の場なんやて。',spot:'map'}]},
+  {id:'obj_fox',type:'object',x:52,y:200,r:16,name:'狐像',act:'しらべる',
+   lines:[{t:'凛とした狐の石像。稲荷の\n神さまのお使いやで。\n赤い前掛けがかわいい。',
+     learn:'<b>豆知識：狐像</b>\n狐は神の使い「神使」。稲を食べるネズミを退治することから五穀豊穣の守りに。',spot:'fox'}]},
+  {id:'exit_romon',type:'exit',x:90,y:200,r:18,name:'楼門へ進む',act:'すすむ',to:'romon'}
+];
+
+const SPOT_FULL={
+  torii_manner:{ico:'⛩️',title:'鳥居のくぐり方',text:'端を通って軽く一礼。真ん中は神さまの通り道。'},
+  senbei:{ico:'🍘',title:'稲荷せんべい',text:'狐の面の形に焼いた参道名物の瓦せんべい。'},
+  big_torii:{ico:'⛩️',title:'大鳥居と朱色',text:'朱色は魔除けと生命力の象徴。'},
+  map:{ico:'🗺️',title:'お山めぐり',text:'本殿から山頂まで一周約2時間の信仰の道。'},
+  fox:{ico:'🦊',title:'狐は神の使い',text:'五穀豊穣の守りと結びついた「神使」。'},
+  sanpai:{ico:'🙏',title:'二礼二拍手一礼',text:'おじぎ2回→拍手2回→お願い→一礼。'},
+  temizu:{ico:'💧',title:'手水の作法',text:'左手→右手→口の順で清める。'},
+  fox_item:{ico:'🦊',title:'狐がくわえるもの',text:'稲穂・鍵・宝珠など意味が込められている。'},
+  senbon:{ico:'⛩️',title:'千本鳥居',text:'願いが通るよう奉納された鳥居の連なり。'}
+};
+const CAT_META={
+  cat_torii:{ico:'🐱',name:'気まぐれ猫',text:'鳥居の根元がお気に入りの昼寝スポット。'},
+  cat_shop:{ico:'🐈',name:'人懐っこい猫',text:'茶屋の前に住む看板猫。撫でられ好き。'},
+  cat_lantern:{ico:'🐈‍⬛',name:'落ち着いた猫',text:'灯籠の陰で日向ぼっこするお山の主。'},
+  cat_honden:{ico:'🐈‍⬛',name:'本殿の黒猫',text:'参拝客を見守る静かな黒猫。'},
+  cat_senbon:{ico:'🐱',name:'鳥居の番猫',text:'朱の鳥居に佇む神秘的な猫。'}
+};
+const VISIT_META={
+  honden:{ico:'📿',name:'本殿参拝',text:'二礼二拍手一礼でお参りした。'},
+  senbon:{ico:'⛩️',name:'千本鳥居',text:'朱のトンネルを通り抜けた。'}
+};
+
+//============ 当たり判定 ============
+function canWalk(x,y){
+  if(x<34||x>146)return false;
+  if(y<floorTop()+6||y>floorBot())return false;
+  const blockers=SCENE==='sando'
+    ?[[42,FLOOR.top+30],[138,FLOOR.top+30],[48,FLOOR.top+108],[132,FLOOR.top+108],[150,FLOOR.top+72],[52,FLOOR.top+10],[128,FLOOR.top+10]]
+    :SCENE==='romon'
+    ?[[138,212]]
+    :[];
+  for(const[bx,by] of blockers){if(Math.abs(x-bx)<7&&Math.abs(y-by)<6)return false;}
+  return true;
+}
+
+//============ 近接判定 ============
+function updateNearest(){
+  let best=null,bd=1e9;
+  for(const e of ENTITIES){const d=Math.hypot(P.x-e.x,P.y-e.y);if(d<e.r&&d<bd){bd=d;best=e;}}
+  game.nearest=best;
+  const a=document.getElementById('act-main'),ic=document.getElementById('act-icon'),lb=document.getElementById('act-label');
+  if(best){a.classList.remove('disabled');
+    ic.textContent={npc:'💬',cat:'🐾',object:'🔍',exit:'➡️'}[best.type]||'🔍';lb.textContent=best.act;}
+  else{a.classList.add('disabled');ic.textContent='🔍';lb.textContent='しらべる';}
+}
+
+//============ 会話 ============
+let dlg={active:false,lines:[],idx:0,ent:null};
+function startDialog(e){
+  if(!e.lines&&!e.react)return;
+  dlg.active=true;dlg.ent=e;dlg.idx=0;
+  dlg.lines=(e.type==='cat')?[{t:e.react,learn:e.learn?('<b>'+e.name+'</b>\n'+e.learn):null}]:e.lines;
+  showPage();document.getElementById('dialog').classList.add('show');
+}
+function showPage(){
+  const pg=dlg.lines[dlg.idx],sp=document.getElementById('dlg-speaker');
+  sp.textContent=dlg.ent.name;sp.className='speaker'+(dlg.ent.type==='cat'?' cat':'');
+  document.getElementById('dlg-text').textContent=pg.t;
+  const L=document.getElementById('dlg-learn'),M=document.getElementById('dlg-more');
+  L.classList.remove('show');L.innerHTML='';
+  if(pg.learn){M.style.display='inline-block';M.onclick=()=>{L.innerHTML=pg.learn;L.classList.add('show');M.style.display='none';};}
+  else M.style.display='none';
+}
+function advance(){
+  const pg=dlg.lines[dlg.idx];
+  if(pg.spot&&!game.spots[pg.spot]){game.spots[pg.spot]=true;
+    toast('📖','見聞を記録した',SPOT_FULL[pg.spot]?.title||'');}
+  dlg.idx++;
+  if(dlg.idx>=dlg.lines.length)endDialog();else showPage();
+}
+function endDialog(){
+  const e=dlg.ent;
+  dlg.active=false;document.getElementById('dialog').classList.remove('show');
+  if(e.type==='cat'&&!game.cats[e.id]){game.cats[e.id]=true;updateCatCount();toast('🐱','猫帳に登録！',e.name);}
+  if(e&&e.visit){recordVisit(e.visit,e.name);
+    if(e.id==='honden'){setQuest('千本鳥居へ向かおう');setTimeout(()=>toast('🎉','本殿にお参り完了！','お山めぐりの第一歩や'),700);}
+    if(e.id==='senbon'){setQuest('（MVPはここまで。続きは拡張で！）');setTimeout(()=>toast('🎉','千本鳥居を抜けた！','この先は奥社…続きは次回！'),700);}
+  }
+  dlg.ent=null;
+}
+
+//============ アクション/遷移 ============
+function doAction(){
+  if(dlg.active){advance();return;}
+  if(document.getElementById('book').classList.contains('show'))return;
+  const e=game.nearest;if(!e)return;
+  if(e.type==='exit'){goExit(e);return;}
+  startDialog(e);
+}
+function goExit(e){
+  if(e.to==='romon')enterRomon();
+  else if(e.to==='sando')enterSando();
+  else if(e.to==='senbon')enterSenbon();
+}
+function enterSando(){
+  SCENE='sando';WORLD_H=380;
+  P.x=90;P.y=300;P.dir='up';P.moving=false;
+  document.getElementById('area-label').textContent='伏見稲荷 大鳥居前';
+  setQuest('楼門にお参りしよう');
+  ENTITIES=SANDO_ENTITIES.map(o=>({...o}));
+  toast('⛩️','伏見稲荷 大鳥居前','');
+}
+function enterRomon(){
+  SCENE='romon';WORLD_H=380;
+  P.x=90;P.y=300;P.dir='up';P.moving=false;
+  document.getElementById('area-label').textContent='伏見稲荷 楼門・本殿前';
+  setQuest('本殿でお参りしよう');
+  ENTITIES=[
+    {id:'honden',type:'object',x:90,y:178,r:34,name:'本殿',act:'お参り',
+     lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
+       learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
+    {id:'temizu',type:'object',x:138,y:224,r:22,name:'手水舎',act:'しらべる',
+     lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
+       learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
+    {id:'fox2',type:'object',x:48,y:206,r:22,name:'楼門の狐像',act:'しらべる',
+     lines:[{t:'口に何かをくわえた狐像。\n稲穂や鍵、玉をくわえてる\nことが多いんやて。',
+       learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
+    {id:'cat_honden',type:'cat',x:120,y:264,r:18,sprite:{body:'#3a3a3a'},name:'本殿の黒猫',act:'なでる',
+     react:'(静かにこちらを\n 見上げている)\n…にゃ。',learn:'参拝客を見守る落ち着いた黒猫。'},
+    {id:'to_senbon',type:'exit',x:64,y:318,r:26,name:'千本鳥居へ',act:'すすむ',to:'senbon'},
+    {id:'back_sando',type:'exit',x:118,y:340,r:24,name:'参道へ戻る',act:'もどる',to:'sando'}
+  ];
+  toast('⛩️','楼門・本殿前','');
+}
+function enterSenbon(){
+  SCENE='senbon';WORLD_H=400;
+  P.x=90;P.y=340;P.dir='up';P.moving=false;
+  document.getElementById('area-label').textContent='伏見稲荷 千本鳥居';
+  setQuest('鳥居の先へ進んでみよう');
+  ENTITIES=[
+    {id:'obj_senbon',type:'object',x:90,y:160,r:40,name:'千本鳥居',act:'しらべる',
+     lines:[{t:'朱色の鳥居がどこまでも続く…！\nまるで朱のトンネルや。',
+       learn:'<b>豆知識：千本鳥居</b>\n願いが「通る」よう、江戸時代から鳥居を奉納する習わしが広まったんやて。裏に奉納者の名前があるで。',spot:'senbon'}],visit:'senbon'},
+    {id:'cat_senbon',type:'cat',x:120,y:260,r:16,sprite:{body:'#d8b048',calico:true},name:'鳥居の番猫',act:'なでる',
+     react:'(鳥居の影から\n ひょっこり)\nにゃー。',learn:'朱の鳥居が連なる道に佇む猫。'},
+    {id:'back_romon2',type:'exit',x:90,y:350,r:20,name:'本殿へ戻る',act:'もどる',to:'romon'}
+  ];
+  toast('⛩️','千本鳥居','右側通行やで');
+}
+
+//============ 記録・HUD ============
+function recordVisit(id,label){if(!game.visits[id]){game.visits[id]=true;toast('📿','参拝を記録した',label||'');}}
+function updateCatCount(){let n=0;for(const _ in game.cats)n++;document.getElementById('cat-n').textContent=n;}
+function setQuest(t){game.quest=t;document.getElementById('quest-text').textContent=t;}
+function toast(ico,title,sub){
+  const layer=document.getElementById('toast-layer'),el=document.createElement('div');
+  el.className='toast';
+  el.innerHTML=`<span class="t-ico">${ico}</span><span>${title}${sub?'<br><small style="font-weight:500;opacity:.8">'+sub+'</small>':''}</span>`;
+  layer.appendChild(el);setTimeout(()=>el.remove(),2400);
+}
+
+//============ 帳面 ============
+function openBook(tab){document.getElementById('book').classList.add('show');renderBook(tab||'cat');}
+function renderBook(tab){
+  document.querySelectorAll('#book .tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  const pages=document.getElementById('book-pages');pages.innerHTML='';let items=[];
+  if(tab==='cat'){for(const id in game.cats){const m=CAT_META[id];if(m)items.push(m);}
+    renderEntries(pages,items,'まだ猫に出会ってへん。\n参道を歩いて探してみよう🐾');}
+  else if(tab==='spot'){for(const id in game.spots){const m=SPOT_FULL[id];if(m)items.push({ico:m.ico,name:m.title,text:m.text});}
+    renderEntries(pages,items,'まだ何も調べてへん。\n鳥居や案内板を調べてみよう🔍');}
+  else{for(const id in game.visits){const m=VISIT_META[id];if(m)items.push(m);}
+    renderEntries(pages,items,'まだお参りしてへん。\n本殿でお参りしてみよう📿');}
+}
+function renderEntries(el,items,empty){
+  if(!items.length){el.innerHTML=`<div class="empty">${empty}</div>`;return;}
+  items.forEach(m=>{const d=document.createElement('div');d.className='entry';
+    d.innerHTML=`<span class="e-ico">${m.ico}</span><div><b>${m.name||m.title}</b>${m.text}</div>`;el.appendChild(d);});
+}
+
+//============ 入力 ============
+const held={up:false,down:false,left:false,right:false};
+function bindDir(id,dir){
+  const el=document.getElementById(id);
+  const on=e=>{e.preventDefault();held[dir]=true;},off=e=>{e.preventDefault();held[dir]=false;};
+  el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);
+  el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);
+}
+bindDir('d-up','up');bindDir('d-down','down');bindDir('d-left','left');bindDir('d-right','right');
+document.getElementById('act-main').addEventListener('pointerdown',e=>{e.preventDefault();doAction();});
+document.getElementById('book-btn').addEventListener('pointerdown',e=>{e.preventDefault();
+  if(!document.getElementById('book').classList.contains('show'))openBook('cat');});
+document.getElementById('book-close').addEventListener('pointerdown',e=>{e.preventDefault();
+  document.getElementById('book').classList.remove('show');});
+document.querySelectorAll('#book .tab').forEach(t=>t.addEventListener('pointerdown',e=>{e.preventDefault();renderBook(t.dataset.tab);}));
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp')held.up=true;if(e.key==='ArrowDown')held.down=true;
+  if(e.key==='ArrowLeft')held.left=true;if(e.key==='ArrowRight')held.right=true;
+  if(e.key==='z'||e.key==='Z'||e.key==='Enter'||e.key===' '){e.preventDefault();doAction();}
+  if(e.key==='b'||e.key==='B'){const b=document.getElementById('book');
+    if(b.classList.contains('show'))b.classList.remove('show');else openBook('cat');}
+});
+addEventListener('keyup',e=>{
+  if(e.key==='ArrowUp')held.up=false;if(e.key==='ArrowDown')held.down=false;
+  if(e.key==='ArrowLeft')held.left=false;if(e.key==='ArrowRight')held.right=false;
+});
+document.getElementById('start-btn').addEventListener('pointerdown',e=>{
+  e.preventDefault();document.getElementById('title').classList.add('hide');game.started=true;
+});
+
+//============ 更新・描画ループ ============
+function updatePlayer(){
+  if(dlg.active||document.getElementById('book').classList.contains('show')){P.moving=false;return;}
+  let dx=0,dy=0;
+  if(held.up){dy=-1;P.dir='up';}else if(held.down){dy=1;P.dir='down';}
+  else if(held.left){dx=-1;P.dir='left';}else if(held.right){dx=1;P.dir='right';}
+  if(dx||dy){
+    const nx=P.x+dx*P.speed,ny=P.y+dy*P.speed;let moved=false;
+    if(canWalk(nx,P.y)){P.x=nx;moved=true;}if(canWalk(P.x,ny)){P.y=ny;moved=true;}
+    P.moving=moved;P.anim++;
+  }else P.moving=false;
+}
+function render(){
+  // カメラはごく僅かに追従（眺めを常にフレーム内へ）
+  const maxCam=Math.max(0,WORLD_H-VH);
+  let camY=(P.y-floorTop())*0.35; camY=Math.max(0,Math.min(camY,maxCam));
+  if(SCENE==='sando')drawSando(camY);
+  else if(SCENE==='romon')drawRomon(camY);
+  else drawSenbon(camY);
+
+  const list=[];
+  for(const e of ENTITIES){list.push({y:e.y,fn:()=>{
+    const sx=e.x,sy=e.y-camY;if(sy<-30||sy>VH+30)return;
+    if(e.type==='npc')drawNPC(e.sprite,sx,sy);
+    else if(e.type==='cat')drawCat({id:e.id,...e.sprite},sx,sy);
+    else if(e.type==='exit'){const p=0.5+0.5*Math.sin(P.anim*0.1);
+      ctx.fillStyle=`rgba(217,169,58,${0.16+0.16*p})`;ctx.beginPath();ctx.ellipse(sx,sy,12,5,0,0,7);ctx.fill();}
+  }});}
+  list.push({y:P.y,fn:()=>drawPlayer(P.x,P.y-camY)});
+  list.sort((a,b)=>a.y-b.y);list.forEach(d=>d.fn());
+
+  if(game.nearest&&!dlg.active){
+    const e=game.nearest,sy=e.y-camY,p=0.5+0.5*Math.sin(P.anim*0.15);
+    ctx.strokeStyle=`rgba(217,169,58,${0.4+0.4*p})`;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(e.x,sy+(e.type==='cat'?6:14),9,3.5,0,0,7);ctx.stroke();
+    // ぴょこっとした「!」マーク
+    const my=sy-(e.type==='object'?30:e.type==='exit'?16:22)-p*2;
+    R(e.x-1,my,2,4,'#d9a93a');R(e.x-1,my+5,2,2,'#d9a93a');
+  }
+}
+function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
+ENTITIES=SANDO_ENTITIES.map(o=>({...o}));
+updateCatCount();loop();
+</script>
+</body>
+</html>
