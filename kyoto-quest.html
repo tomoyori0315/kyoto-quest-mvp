@@ -548,6 +548,7 @@ const MAPS={
     ],
     entities:SANDO_ENTITIES,
     backgroundType:'code',
+    backgroundImage:'assets/bg/sando.png',
     draw:'drawSando'
   },
   romon:{
@@ -562,6 +563,7 @@ const MAPS={
     ],
     entities:ROMON_ENTITIES,
     backgroundType:'code',
+    backgroundImage:'assets/bg/romon.png',
     draw:'drawRomon'
   },
   senbon:{
@@ -574,10 +576,33 @@ const MAPS={
     blockers:[],
     entities:SENBON_ENTITIES,
     backgroundType:'code',
+    backgroundImage:'assets/bg/senbon.png',
     draw:'drawSenbon',
     toastSub:'右側通行やで'
   }
 };
+
+const BACKGROUND_IMAGES={};
+const BACKGROUND_DRAWERS={drawSando,drawRomon,drawSenbon};
+function loadBackgroundImages(){
+  for(const id in MAPS){
+    const src=MAPS[id].backgroundImage;if(!src)continue;
+    const img=new Image();
+    BACKGROUND_IMAGES[id]={img,ready:false,error:false};
+    img.onload=()=>{BACKGROUND_IMAGES[id].ready=true;};
+    img.onerror=()=>{BACKGROUND_IMAGES[id].error=true;};
+    img.src=src;
+  }
+}
+function drawSceneBackground(sceneId,camY){
+  const map=MAPS[sceneId],bg=BACKGROUND_IMAGES[sceneId];
+  if(bg&&bg.ready){
+    ctx.drawImage(bg.img,0,-camY,VW,map.worldH);
+    return;
+  }
+  const draw=BACKGROUND_DRAWERS[map.draw];
+  if(draw)draw(camY);
+}
 
 const SPOT_FULL={
   torii_manner:{ico:'⛩️',title:'鳥居のくぐり方',text:'端を通って軽く一礼。真ん中は神さまの通り道。'},
@@ -805,9 +830,7 @@ function render(){
   // カメラはごく僅かに追従（眺めを常にフレーム内へ）
   const maxCam=Math.max(0,WORLD_H-VH);
   let camY=(P.y-floorTop())*0.35; camY=Math.max(0,Math.min(camY,maxCam));
-  if(SCENE==='sando')drawSando(camY);
-  else if(SCENE==='romon')drawRomon(camY);
-  else drawSenbon(camY);
+  drawSceneBackground(SCENE,camY);
 
   const list=[];
   for(const e of ENTITIES){list.push({y:e.y,fn:()=>{
@@ -831,6 +854,7 @@ function render(){
   if(game.debug)drawDebug(camY);
 }
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
+loadBackgroundImages();
 enterScene('sando',false);
 updateCatCount();loop();
 </script>
