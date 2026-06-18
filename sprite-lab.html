@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>京都クエスト Sprite Lab</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#18140f;color:#efe7d4;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+  main{display:grid;grid-template-columns:minmax(240px,420px) 1fr;gap:14px;padding:14px;min-height:100vh}
+  .stage-wrap,.panel{background:#241e17;border:1px solid #5d4a32;border-radius:8px;padding:10px}
+  .stage{position:relative;width:min(100%,360px);aspect-ratio:180/320;margin:auto;overflow:hidden;background:#000;border:2px solid #80603a}
+  #bg{position:absolute;left:0;top:0;width:100%;height:auto;image-rendering:pixelated}
+  #sprite{position:absolute;image-rendering:pixelated;transform-origin:50% 100%;pointer-events:none}
+  .anchor{position:absolute;width:11px;height:11px;margin:-5px 0 0 -5px;pointer-events:none}
+  .anchor::before,.anchor::after{content:"";position:absolute;background:#ff2c2c}
+  .anchor::before{left:5px;top:0;width:1px;height:11px}
+  .anchor::after{left:0;top:5px;width:11px;height:1px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  button,select,label{font:inherit}
+  button,select{background:#eadbbd;color:#2a2018;border:1px solid #9c7a47;border-radius:6px;padding:7px 9px}
+  button.active{background:#c4402a;color:#fff;border-color:#e19a55}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:9px 0}
+  .hint{font-size:12px;line-height:1.5;color:#cdbb98}
+  .sheet-box{overflow:auto;background:#120f0b;border:1px solid #5d4a32;border-radius:6px;max-height:58vh}
+  canvas{display:block;image-rendering:pixelated}
+  .readout{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#bfe8a4}
+  @media(max-width:760px){main{grid-template-columns:1fr}.sheet-box{max-height:42vh}}
+</style>
+</head>
+<body>
+<main>
+  <section class="stage-wrap">
+    <div class="stage" id="stage">
+      <img id="bg" src="assets/bg/sando.png" alt="">
+      <img id="sprite" alt="">
+      <div class="anchor" id="anchor"></div>
+    </div>
+    <p class="hint">赤い十字が足元アンカー。背景はsandoを180x380基準で表示し、中央付近だけを切り出しています。</p>
+  </section>
+
+  <section class="panel">
+    <h1>Sprite Lab</h1>
+    <div class="row">
+      <label>Sheet
+        <select id="sheet">
+          <option value="walk">player-walk-sheet.png</option>
+          <option value="static">player-sheet.png</option>
+        </select>
+      </label>
+      <button id="play">再生</button>
+      <button id="mode">walking</button>
+      <button id="swap">left/right入替 OFF</button>
+    </div>
+
+    <div class="row grid" id="dirs">
+      <button data-dir="down" class="active">down</button>
+      <button data-dir="up">up</button>
+      <button data-dir="left">left</button>
+      <button data-dir="right">right</button>
+    </div>
+
+    <div class="row">
+      <label>draw height
+        <select id="height">
+          <option>24</option>
+          <option>28</option>
+          <option selected>30</option>
+          <option>34</option>
+          <option>38</option>
+        </select>
+      </label>
+      <label>anchor X
+        <select id="anchorX">
+          <option>80</option><option selected>90</option><option>100</option>
+        </select>
+      </label>
+      <label>anchor Y
+        <select id="anchorY">
+          <option>220</option><option selected>240</option><option>260</option><option>280</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row readout" id="readout"></div>
+    <h2>Sheet Preview</h2>
+    <p class="hint">青線が切り出しセル。walkは4列x3行、staticは2列x2行として表示します。</p>
+    <div class="sheet-box"><canvas id="preview"></canvas></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+const sheets={
+  walk:{src:"assets/sprites/player-walk-sheet.png",cols:4,rows:3,dirs:["down","up","left","right"],idleRow:1,walkRows:[0,1,2,1]},
+  static:{src:"assets/sprites/player-sheet.png",cols:2,rows:2,dirs:["down","up","left","right"],cells:{down:[0,0],up:[1,0],left:[0,1],right:[1,1]},idleRow:0,walkRows:[0]}
+};
+const state={sheet:"walk",dir:"down",playing:false,walking:true,swapLR:false,frame:0};
+const imgs={};
+const els={
+  stage:document.getElementById("stage"),bg:document.getElementById("bg"),sprite:document.getElementById("sprite"),
+  anchor:document.getElementById("anchor"),sheet:document.getElementById("sheet"),play:document.getElementById("play"),
+  mode:document.getElementById("mode"),swap:document.getElementById("swap"),height:document.getElementById("height"),
+  anchorX:document.getElementById("anchorX"),anchorY:document.getElementById("anchorY"),preview:document.getElementById("preview"),
+  readout:document.getElementById("readout")
+};
+function loadImage(src){
+  if(imgs[src])return imgs[src];
+  const img=new Image();img.src=src;imgs[src]=img;img.onload=()=>{renderPreview();renderSprite();};
+  return img;
+}
+function effectiveDir(){
+  if(!state.swapLR)return state.dir;
+  if(state.dir==="left")return "right";
+  if(state.dir==="right")return "left";
+  return state.dir;
+}
+function currentCell(){
+  const s=sheets[state.sheet],dir=effectiveDir();
+  if(s.cells)return s.cells[dir];
+  const col=s.dirs.indexOf(dir);
+  const row=state.walking?(state.playing?s.walkRows[state.frame%s.walkRows.length]:s.idleRow):s.idleRow;
+  return [col,row];
+}
+function frameCanvas(){
+  const s=sheets[state.sheet],img=loadImage(s.src);
+  if(!img.complete||!img.naturalWidth)return null;
+  const [col,row]=currentCell(),fw=img.naturalWidth/s.cols,fh=img.naturalHeight/s.rows;
+  const c=document.createElement("canvas"),g=c.getContext("2d");
+  c.width=Math.round(fw);c.height=Math.round(fh);
+  g.drawImage(img,col*fw,row*fh,fw,fh,0,0,c.width,c.height);
+  try{
+    const data=g.getImageData(0,0,c.width,c.height),p=data.data;
+    for(let i=0;i<p.length;i+=4){if(p[i]>232&&p[i+1]>212&&p[i+2]>175)p[i+3]=0;}
+    g.putImageData(data,0,0);
+  }catch(_){}
+  return c;
+}
+function renderSprite(){
+  const c=frameCanvas();if(!c)return;
+  const h=Number(els.height.value),w=c.width/c.height*h;
+  const ax=Number(els.anchorX.value),ay=Number(els.anchorY.value);
+  const scale=els.stage.clientWidth/180;
+  els.sprite.src=c.toDataURL();
+  els.sprite.style.width=w*scale+"px";
+  els.sprite.style.height=h*scale+"px";
+  els.sprite.style.left=(ax-w/2)*scale+"px";
+  els.sprite.style.top=(ay-h)*scale+"px";
+  els.anchor.style.left=ax*scale+"px";
+  els.anchor.style.top=ay*scale+"px";
+  els.bg.style.width=180*scale+"px";
+  els.bg.style.height=380*scale+"px";
+  els.bg.style.top=-60*scale+"px";
+  els.readout.textContent=`sheet=${state.sheet} dir=${state.dir} effective=${effectiveDir()} cell=${currentCell().join(",")} draw=${Math.round(w)}x${h} anchor=${ax},${ay}`;
+}
+function renderPreview(){
+  const s=sheets[state.sheet],img=loadImage(s.src),c=els.preview,g=c.getContext("2d");
+  if(!img.complete||!img.naturalWidth)return;
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  g.drawImage(img,0,0);
+  const fw=img.naturalWidth/s.cols,fh=img.naturalHeight/s.rows;
+  g.strokeStyle="#28a8ff";g.lineWidth=4;
+  for(let x=0;x<=s.cols;x++){g.beginPath();g.moveTo(x*fw,0);g.lineTo(x*fw,c.height);g.stroke();}
+  for(let y=0;y<=s.rows;y++){g.beginPath();g.moveTo(0,y*fh);g.lineTo(c.width,y*fh);g.stroke();}
+}
+function setActiveDir(){
+  document.querySelectorAll("#dirs button").forEach(b=>b.classList.toggle("active",b.dataset.dir===state.dir));
+}
+document.getElementById("dirs").addEventListener("click",e=>{
+  if(e.target.dataset.dir){state.dir=e.target.dataset.dir;setActiveDir();renderSprite();}
+});
+els.sheet.onchange=()=>{state.sheet=els.sheet.value;state.frame=0;loadImage(sheets[state.sheet].src);renderPreview();renderSprite();};
+els.play.onclick=()=>{state.playing=!state.playing;els.play.classList.toggle("active",state.playing);els.play.textContent=state.playing?"停止":"再生";renderSprite();};
+els.mode.onclick=()=>{state.walking=!state.walking;els.mode.classList.toggle("active",state.walking);els.mode.textContent=state.walking?"walking":"idle only";state.frame=0;renderSprite();};
+els.swap.onclick=()=>{state.swapLR=!state.swapLR;els.swap.classList.toggle("active",state.swapLR);els.swap.textContent=`left/right入替 ${state.swapLR?"ON":"OFF"}`;renderSprite();};
+els.height.onchange=els.anchorX.onchange=els.anchorY.onchange=renderSprite;
+setInterval(()=>{if(state.playing){state.frame++;renderSprite();}},220);
+loadImage(sheets.walk.src);loadImage(sheets.static.src);renderSprite();
+</script>
+</body>
+</html>
