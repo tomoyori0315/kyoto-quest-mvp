@@ -25,6 +25,8 @@
   .sheet-box{overflow:auto;background:#120f0b;border:1px solid #5d4a32;border-radius:6px;max-height:58vh}
   canvas{display:block;image-rendering:pixelated}
   .readout{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#bfe8a4}
+  input{width:82px;background:#eadbbd;color:#2a2018;border:1px solid #9c7a47;border-radius:6px;padding:7px 8px}
+  textarea{width:100%;min-height:150px;background:#120f0b;color:#bfe8a4;border:1px solid #5d4a32;border-radius:6px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
   @media(max-width:760px){main{grid-template-columns:1fr}.sheet-box{max-height:42vh}}
 </style>
 </head>
@@ -82,7 +84,22 @@
       </label>
     </div>
 
+    <h2>Manual Crop</h2>
+    <div class="row">
+      <label>crop X <input id="cropX" type="number" step="1"></label>
+      <label>crop Y <input id="cropY" type="number" step="1"></label>
+      <label>cell W <input id="cellW" type="number" step="1"></label>
+      <label>cell H <input id="cellH" type="number" step="1"></label>
+    </div>
+    <div class="row">
+      <label>offset X <input id="offsetX" type="number" step="1" value="0"></label>
+      <label>offset Y <input id="offsetY" type="number" step="1" value="0"></label>
+      <button id="resetCrop">grid既定値に戻す</button>
+    </div>
+
     <div class="row readout" id="readout"></div>
+    <h2>Config JSON</h2>
+    <textarea id="config" readonly></textarea>
     <h2>Sheet Preview</h2>
     <p class="hint">青線が切り出しセル。walkは4列x3行、staticは2列x2行として表示します。</p>
     <div class="sheet-box"><canvas id="preview"></canvas></div>
@@ -102,12 +119,34 @@ const els={
   anchor:document.getElementById("anchor"),sheet:document.getElementById("sheet"),play:document.getElementById("play"),
   mode:document.getElementById("mode"),swap:document.getElementById("swap"),height:document.getElementById("height"),
   anchorX:document.getElementById("anchorX"),anchorY:document.getElementById("anchorY"),preview:document.getElementById("preview"),
-  readout:document.getElementById("readout")
+  readout:document.getElementById("readout"),cropX:document.getElementById("cropX"),cropY:document.getElementById("cropY"),
+  cellW:document.getElementById("cellW"),cellH:document.getElementById("cellH"),offsetX:document.getElementById("offsetX"),
+  offsetY:document.getElementById("offsetY"),resetCrop:document.getElementById("resetCrop"),config:document.getElementById("config")
 };
 function loadImage(src){
   if(imgs[src])return imgs[src];
-  const img=new Image();img.src=src;imgs[src]=img;img.onload=()=>{renderPreview();renderSprite();};
+  const img=new Image();img.src=src;imgs[src]=img;img.onload=()=>{setDefaultCrop();renderPreview();renderSprite();};
   return img;
+}
+function cropValues(){
+  const s=sheets[state.sheet],img=loadImage(s.src);
+  return {
+    cropX:Number(els.cropX.value)||0,
+    cropY:Number(els.cropY.value)||0,
+    cellW:Number(els.cellW.value)||Math.round((img.naturalWidth||0)/s.cols),
+    cellH:Number(els.cellH.value)||Math.round((img.naturalHeight||0)/s.rows),
+    offsetX:Number(els.offsetX.value)||0,
+    offsetY:Number(els.offsetY.value)||0
+  };
+}
+function setDefaultCrop(force=false){
+  const s=sheets[state.sheet],img=loadImage(s.src);
+  if(!img.complete||!img.naturalWidth)return;
+  if(force||!els.cellW.value){
+    els.cropX.value=0;els.cropY.value=0;
+    els.cellW.value=Math.round(img.naturalWidth/s.cols);
+    els.cellH.value=Math.round(img.naturalHeight/s.rows);
+  }
 }
 function effectiveDir(){
   if(!state.swapLR)return state.dir;
@@ -125,10 +164,11 @@ function currentCell(){
 function frameCanvas(){
   const s=sheets[state.sheet],img=loadImage(s.src);
   if(!img.complete||!img.naturalWidth)return null;
-  const [col,row]=currentCell(),fw=img.naturalWidth/s.cols,fh=img.naturalHeight/s.rows;
+  const [col,row]=currentCell(),cv=cropValues();
+  const sx=cv.cropX+col*cv.cellW,sy=cv.cropY+row*cv.cellH;
   const c=document.createElement("canvas"),g=c.getContext("2d");
-  c.width=Math.round(fw);c.height=Math.round(fh);
-  g.drawImage(img,col*fw,row*fh,fw,fh,0,0,c.width,c.height);
+  c.width=Math.round(cv.cellW);c.height=Math.round(cv.cellH);
+  g.drawImage(img,sx,sy,cv.cellW,cv.cellH,0,0,c.width,c.height);
   try{
     const data=g.getImageData(0,0,c.width,c.height),p=data.data;
     for(let i=0;i<p.length;i+=4){if(p[i]>232&&p[i+1]>212&&p[i+2]>175)p[i+3]=0;}
@@ -139,29 +179,45 @@ function frameCanvas(){
 function renderSprite(){
   const c=frameCanvas();if(!c)return;
   const h=Number(els.height.value),w=c.width/c.height*h;
-  const ax=Number(els.anchorX.value),ay=Number(els.anchorY.value);
+  const ax=Number(els.anchorX.value),ay=Number(els.anchorY.value),cv=cropValues();
   const scale=els.stage.clientWidth/180;
   els.sprite.src=c.toDataURL();
   els.sprite.style.width=w*scale+"px";
   els.sprite.style.height=h*scale+"px";
-  els.sprite.style.left=(ax-w/2)*scale+"px";
-  els.sprite.style.top=(ay-h)*scale+"px";
+  els.sprite.style.left=(ax-w/2+cv.offsetX)*scale+"px";
+  els.sprite.style.top=(ay-h+cv.offsetY)*scale+"px";
   els.anchor.style.left=ax*scale+"px";
   els.anchor.style.top=ay*scale+"px";
   els.bg.style.width=180*scale+"px";
   els.bg.style.height=380*scale+"px";
   els.bg.style.top=-60*scale+"px";
-  els.readout.textContent=`sheet=${state.sheet} dir=${state.dir} effective=${effectiveDir()} cell=${currentCell().join(",")} draw=${Math.round(w)}x${h} anchor=${ax},${ay}`;
+  els.readout.textContent=`sheet=${state.sheet} dir=${state.dir} effective=${effectiveDir()} cell=${currentCell().join(",")} draw=${Math.round(w)}x${h} anchor=${ax},${ay} offset=${cv.offsetX},${cv.offsetY}`;
+  els.config.value=JSON.stringify({
+    sheet:sheets[state.sheet].src.split("/").pop(),
+    cols:sheets[state.sheet].cols,
+    rows:sheets[state.sheet].rows,
+    cropX:cv.cropX,
+    cropY:cv.cropY,
+    cellW:cv.cellW,
+    cellH:cv.cellH,
+    drawH:h,
+    anchorOffsetX:cv.offsetX,
+    anchorOffsetY:cv.offsetY,
+    swapLR:state.swapLR
+  },null,2);
 }
 function renderPreview(){
   const s=sheets[state.sheet],img=loadImage(s.src),c=els.preview,g=c.getContext("2d");
   if(!img.complete||!img.naturalWidth)return;
   c.width=img.naturalWidth;c.height=img.naturalHeight;
   g.drawImage(img,0,0);
-  const fw=img.naturalWidth/s.cols,fh=img.naturalHeight/s.rows;
+  const cv=cropValues();
   g.strokeStyle="#28a8ff";g.lineWidth=4;
-  for(let x=0;x<=s.cols;x++){g.beginPath();g.moveTo(x*fw,0);g.lineTo(x*fw,c.height);g.stroke();}
-  for(let y=0;y<=s.rows;y++){g.beginPath();g.moveTo(0,y*fh);g.lineTo(c.width,y*fh);g.stroke();}
+  for(let x=0;x<=s.cols;x++){const px=cv.cropX+x*cv.cellW;g.beginPath();g.moveTo(px,cv.cropY);g.lineTo(px,cv.cropY+s.rows*cv.cellH);g.stroke();}
+  for(let y=0;y<=s.rows;y++){const py=cv.cropY+y*cv.cellH;g.beginPath();g.moveTo(cv.cropX,py);g.lineTo(cv.cropX+s.cols*cv.cellW,py);g.stroke();}
+  g.strokeStyle="#ff3030";g.lineWidth=3;
+  const [col,row]=currentCell();
+  g.strokeRect(cv.cropX+col*cv.cellW,cv.cropY+row*cv.cellH,cv.cellW,cv.cellH);
 }
 function setActiveDir(){
   document.querySelectorAll("#dirs button").forEach(b=>b.classList.toggle("active",b.dataset.dir===state.dir));
@@ -169,13 +225,17 @@ function setActiveDir(){
 document.getElementById("dirs").addEventListener("click",e=>{
   if(e.target.dataset.dir){state.dir=e.target.dataset.dir;setActiveDir();renderSprite();}
 });
-els.sheet.onchange=()=>{state.sheet=els.sheet.value;state.frame=0;loadImage(sheets[state.sheet].src);renderPreview();renderSprite();};
+els.sheet.onchange=()=>{state.sheet=els.sheet.value;state.frame=0;loadImage(sheets[state.sheet].src);setDefaultCrop(true);renderPreview();renderSprite();};
 els.play.onclick=()=>{state.playing=!state.playing;els.play.classList.toggle("active",state.playing);els.play.textContent=state.playing?"停止":"再生";renderSprite();};
 els.mode.onclick=()=>{state.walking=!state.walking;els.mode.classList.toggle("active",state.walking);els.mode.textContent=state.walking?"walking":"idle only";state.frame=0;renderSprite();};
 els.swap.onclick=()=>{state.swapLR=!state.swapLR;els.swap.classList.toggle("active",state.swapLR);els.swap.textContent=`left/right入替 ${state.swapLR?"ON":"OFF"}`;renderSprite();};
 els.height.onchange=els.anchorX.onchange=els.anchorY.onchange=renderSprite;
+for(const id of ["cropX","cropY","cellW","cellH","offsetX","offsetY"]){
+  els[id].addEventListener("input",()=>{renderPreview();renderSprite();});
+}
+els.resetCrop.onclick=()=>{setDefaultCrop(true);renderPreview();renderSprite();};
 setInterval(()=>{if(state.playing){state.frame++;renderSprite();}},220);
-loadImage(sheets.walk.src);loadImage(sheets.static.src);renderSprite();
+loadImage(sheets.walk.src);loadImage(sheets.static.src);setDefaultCrop();renderSprite();
 </script>
 </body>
 </html>
