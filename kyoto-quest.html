@@ -225,8 +225,8 @@ let SCENE='sando';
 let WORLD_H=380;
 const FLOOR={top:196, bot:352};   // 参道の歩ける帯（鳥居の手前〜画面下）
 // シーンごとに歩ける縦範囲が異なる。本殿/千本鳥居は奥(上)まで歩けるようにする。
-function floorTop(){ return SCENE==='sando'?196 : SCENE==='romon'?188 : 150; }
-function floorBot(){ return SCENE==='sando'?352 : SCENE==='romon'?360 : 384; }
+function floorTop(){ return MAPS[SCENE].walkable.top; }
+function floorBot(){ return MAPS[SCENE].walkable.bottom; }
 
 let P={x:90,y:300,dir:'up',moving:false,anim:0,speed:1.1};
 let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null};
@@ -498,6 +498,81 @@ const SANDO_ENTITIES=[
   {id:'exit_romon',type:'exit',x:90,y:200,r:18,name:'楼門へ進む',act:'すすむ',to:'romon'}
 ];
 
+const ROMON_ENTITIES=[
+  {id:'honden',type:'object',x:90,y:178,r:34,name:'本殿',act:'お参り',
+   lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
+     learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
+  {id:'temizu',type:'object',x:138,y:224,r:22,name:'手水舎',act:'しらべる',
+   lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
+     learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
+  {id:'fox2',type:'object',x:48,y:206,r:22,name:'楼門の狐像',act:'しらべる',
+   lines:[{t:'口に何かをくわえた狐像。\n稲穂や鍵、玉をくわえてる\nことが多いんやて。',
+     learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
+  {id:'cat_honden',type:'cat',x:120,y:264,r:18,sprite:{body:'#3a3a3a'},name:'本殿の黒猫',act:'なでる',
+   react:'(静かにこちらを\n 見上げている)\n…にゃ。',learn:'参拝客を見守る落ち着いた黒猫。'},
+  {id:'to_senbon',type:'exit',x:64,y:318,r:26,name:'千本鳥居へ',act:'すすむ',to:'senbon'},
+  {id:'back_sando',type:'exit',x:118,y:340,r:24,name:'参道へ戻る',act:'もどる',to:'sando'}
+];
+
+const SENBON_ENTITIES=[
+  {id:'obj_senbon',type:'object',x:90,y:160,r:40,name:'千本鳥居',act:'しらべる',
+   lines:[{t:'朱色の鳥居がどこまでも続く…！\nまるで朱のトンネルや。',
+     learn:'<b>豆知識：千本鳥居</b>\n願いが「通る」よう、江戸時代から鳥居を奉納する習わしが広まったんやて。裏に奉納者の名前があるで。',spot:'senbon'}],visit:'senbon'},
+  {id:'cat_senbon',type:'cat',x:120,y:260,r:16,sprite:{body:'#d8b048',calico:true},name:'鳥居の番猫',act:'なでる',
+   react:'(鳥居の影から\n ひょっこり)\nにゃー。',learn:'朱の鳥居が連なる道に佇む猫。'},
+  {id:'back_romon2',type:'exit',x:90,y:350,r:20,name:'本殿へ戻る',act:'もどる',to:'romon'}
+];
+
+const MAPS={
+  sando:{
+    id:'sando',
+    areaLabel:'伏見稲荷 大鳥居前',
+    quest:'楼門にお参りしよう',
+    worldH:380,
+    spawn:{x:90,y:300,dir:'up'},
+    walkable:{left:34,right:146,top:196,bottom:352},
+    blockers:[
+      {x:42,y:226,halfW:7,halfH:6},
+      {x:138,y:226,halfW:7,halfH:6},
+      {x:48,y:304,halfW:7,halfH:6},
+      {x:132,y:304,halfW:7,halfH:6},
+      {x:150,y:268,halfW:7,halfH:6},
+      {x:52,y:206,halfW:7,halfH:6},
+      {x:128,y:206,halfW:7,halfH:6}
+    ],
+    entities:SANDO_ENTITIES,
+    backgroundType:'code',
+    draw:'drawSando'
+  },
+  romon:{
+    id:'romon',
+    areaLabel:'伏見稲荷 楼門・本殿前',
+    quest:'本殿でお参りしよう',
+    worldH:380,
+    spawn:{x:90,y:300,dir:'up'},
+    walkable:{left:34,right:146,top:188,bottom:360},
+    blockers:[
+      {x:138,y:212,halfW:7,halfH:6}
+    ],
+    entities:ROMON_ENTITIES,
+    backgroundType:'code',
+    draw:'drawRomon'
+  },
+  senbon:{
+    id:'senbon',
+    areaLabel:'伏見稲荷 千本鳥居',
+    quest:'鳥居の先へ進んでみよう',
+    worldH:400,
+    spawn:{x:90,y:340,dir:'up'},
+    walkable:{left:34,right:146,top:150,bottom:384},
+    blockers:[],
+    entities:SENBON_ENTITIES,
+    backgroundType:'code',
+    draw:'drawSenbon',
+    toastSub:'右側通行やで'
+  }
+};
+
 const SPOT_FULL={
   torii_manner:{ico:'⛩️',title:'鳥居のくぐり方',text:'端を通って軽く一礼。真ん中は神さまの通り道。'},
   senbei:{ico:'🍘',title:'稲荷せんべい',text:'狐の面の形に焼いた参道名物の瓦せんべい。'},
@@ -523,14 +598,12 @@ const VISIT_META={
 
 //============ 当たり判定 ============
 function canWalk(x,y){
-  if(x<34||x>146)return false;
-  if(y<floorTop()+6||y>floorBot())return false;
-  const blockers=SCENE==='sando'
-    ?[[42,FLOOR.top+30],[138,FLOOR.top+30],[48,FLOOR.top+108],[132,FLOOR.top+108],[150,FLOOR.top+72],[52,FLOOR.top+10],[128,FLOOR.top+10]]
-    :SCENE==='romon'
-    ?[[138,212]]
-    :[];
-  for(const[bx,by] of blockers){if(Math.abs(x-bx)<7&&Math.abs(y-by)<6)return false;}
+  const map=MAPS[SCENE],w=map.walkable;
+  if(x<w.left||x>w.right)return false;
+  if(y<w.top+6||y>w.bottom)return false;
+  for(const b of map.blockers){
+    if(Math.abs(x-b.x)<b.halfW&&Math.abs(y-b.y)<b.halfH)return false;
+  }
   return true;
 }
 
@@ -589,55 +662,20 @@ function doAction(){
   startDialog(e);
 }
 function goExit(e){
-  if(e.to==='romon')enterRomon();
-  else if(e.to==='sando')enterSando();
-  else if(e.to==='senbon')enterSenbon();
+  enterScene(e.to);
 }
-function enterSando(){
-  SCENE='sando';WORLD_H=380;
-  P.x=90;P.y=300;P.dir='up';P.moving=false;
-  document.getElementById('area-label').textContent='伏見稲荷 大鳥居前';
-  setQuest('楼門にお参りしよう');
-  ENTITIES=SANDO_ENTITIES.map(o=>({...o}));
-  toast('⛩️','伏見稲荷 大鳥居前','');
+function enterScene(sceneId,showToast=true){
+  const map=MAPS[sceneId];if(!map)return;
+  SCENE=map.id;WORLD_H=map.worldH;
+  P.x=map.spawn.x;P.y=map.spawn.y;P.dir=map.spawn.dir;P.moving=false;
+  document.getElementById('area-label').textContent=map.areaLabel;
+  setQuest(map.quest);
+  ENTITIES=map.entities.map(o=>({...o}));
+  if(showToast)toast('⛩️',map.areaLabel,map.toastSub||'');
 }
-function enterRomon(){
-  SCENE='romon';WORLD_H=380;
-  P.x=90;P.y=300;P.dir='up';P.moving=false;
-  document.getElementById('area-label').textContent='伏見稲荷 楼門・本殿前';
-  setQuest('本殿でお参りしよう');
-  ENTITIES=[
-    {id:'honden',type:'object',x:90,y:178,r:34,name:'本殿',act:'お参り',
-     lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
-       learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
-    {id:'temizu',type:'object',x:138,y:224,r:22,name:'手水舎',act:'しらべる',
-     lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
-       learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
-    {id:'fox2',type:'object',x:48,y:206,r:22,name:'楼門の狐像',act:'しらべる',
-     lines:[{t:'口に何かをくわえた狐像。\n稲穂や鍵、玉をくわえてる\nことが多いんやて。',
-       learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
-    {id:'cat_honden',type:'cat',x:120,y:264,r:18,sprite:{body:'#3a3a3a'},name:'本殿の黒猫',act:'なでる',
-     react:'(静かにこちらを\n 見上げている)\n…にゃ。',learn:'参拝客を見守る落ち着いた黒猫。'},
-    {id:'to_senbon',type:'exit',x:64,y:318,r:26,name:'千本鳥居へ',act:'すすむ',to:'senbon'},
-    {id:'back_sando',type:'exit',x:118,y:340,r:24,name:'参道へ戻る',act:'もどる',to:'sando'}
-  ];
-  toast('⛩️','楼門・本殿前','');
-}
-function enterSenbon(){
-  SCENE='senbon';WORLD_H=400;
-  P.x=90;P.y=340;P.dir='up';P.moving=false;
-  document.getElementById('area-label').textContent='伏見稲荷 千本鳥居';
-  setQuest('鳥居の先へ進んでみよう');
-  ENTITIES=[
-    {id:'obj_senbon',type:'object',x:90,y:160,r:40,name:'千本鳥居',act:'しらべる',
-     lines:[{t:'朱色の鳥居がどこまでも続く…！\nまるで朱のトンネルや。',
-       learn:'<b>豆知識：千本鳥居</b>\n願いが「通る」よう、江戸時代から鳥居を奉納する習わしが広まったんやて。裏に奉納者の名前があるで。',spot:'senbon'}],visit:'senbon'},
-    {id:'cat_senbon',type:'cat',x:120,y:260,r:16,sprite:{body:'#d8b048',calico:true},name:'鳥居の番猫',act:'なでる',
-     react:'(鳥居の影から\n ひょっこり)\nにゃー。',learn:'朱の鳥居が連なる道に佇む猫。'},
-    {id:'back_romon2',type:'exit',x:90,y:350,r:20,name:'本殿へ戻る',act:'もどる',to:'romon'}
-  ];
-  toast('⛩️','千本鳥居','右側通行やで');
-}
+function enterSando(){enterScene('sando');}
+function enterRomon(){enterScene('romon');}
+function enterSenbon(){enterScene('senbon');}
 
 //============ 記録・HUD ============
 function recordVisit(id,label){if(!game.visits[id]){game.visits[id]=true;toast('📿','参拝を記録した',label||'');}}
@@ -739,7 +777,7 @@ function render(){
   }
 }
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
-ENTITIES=SANDO_ENTITIES.map(o=>({...o}));
+enterScene('sando',false);
 updateCatCount();loop();
 </script>
 </body>
