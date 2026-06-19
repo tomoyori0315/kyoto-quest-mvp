@@ -304,6 +304,21 @@ const PLAYER_VERTICAL_WALK={
     frames:[]
   }
 };
+const CAT_DRAW_H=28; // 24 / 28 / 32 を試しやすい猫表示サイズ
+const CAT_SPRITES={
+  cat_torii:{
+    src:'assets/sprites/cats/cat-calico-bandana-sheet.png',
+    img:new Image(),ready:false,cellW:724,cellH:724,phase:0,frames:{}
+  },
+  cat_shop:{
+    src:'assets/sprites/cats/cat-orange-tabby-sheet.png',
+    img:new Image(),ready:false,cellW:724,cellH:724,phase:2600,frames:{}
+  },
+  cat_lantern:{
+    src:'assets/sprites/cats/cat-black-bandana-sheet.png',
+    img:new Image(),ready:false,cellW:724,cellH:724,phase:5200,frames:{}
+  }
+};
 function loadPlayerIdleSprite(){
   const img=PLAYER_IDLE.img;
   img.onload=()=>{
@@ -341,6 +356,22 @@ function loadPlayerVerticalWalkSprites(){
     img.src=cfg.src;
   }
 }
+function loadCatSprites(){
+  for(const id in CAT_SPRITES){
+    const cfg=CAT_SPRITES[id],img=cfg.img;
+    img.onload=()=>{
+      cfg.ready=false;
+      cfg.frames={};
+      if(img.naturalWidth<cfg.cellW*3||img.naturalHeight<cfg.cellH)return;
+      cfg.frames.poseA=makeCatSpriteFrame(img,cfg,0);
+      cfg.frames.poseB=makeCatSpriteFrame(img,cfg,1);
+      cfg.frames.poseC=makeCatSpriteFrame(img,cfg,2);
+      cfg.ready=!!(cfg.frames.poseA&&cfg.frames.poseB&&cfg.frames.poseC);
+    };
+    img.onerror=()=>{cfg.ready=false;};
+    img.src=cfg.src;
+  }
+}
 function makePlayerIdleFrame(img,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=PLAYER_IDLE.cellW;c.height=PLAYER_IDLE.cellH;
@@ -356,6 +387,13 @@ function makePlayerSideWalkFrame(img,col){
   return c;
 }
 function makePlayerVerticalWalkFrame(img,cfg,col){
+  const c=document.createElement('canvas'),g=c.getContext('2d');
+  c.width=cfg.cellW;c.height=cfg.cellH;
+  g.drawImage(img,col*cfg.cellW,0,cfg.cellW,cfg.cellH,0,0,c.width,c.height);
+  transparentCreamBackground(c,g);
+  return c;
+}
+function makeCatSpriteFrame(img,cfg,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=cfg.cellW;c.height=cfg.cellH;
   g.drawImage(img,col*cfg.cellW,0,cfg.cellW,cfg.cellH,0,0,c.width,c.height);
@@ -619,6 +657,11 @@ function drawNPC(n,sx,sy){
   R(sx-4,sy+2,4,4,n.pants||'#3a3a42');R(sx,sy+2,4,4,n.pants||'#3a3a42');
 }
 function drawCat(c,sx,sy){
+  const catSprite=CAT_SPRITES[c.id];
+  if(catSprite&&catSprite.ready){
+    drawCatSprite(c,catSprite,sx,sy);
+    return;
+  }
   if(game.cats[c.id]){R(sx-1,sy-13,2,2,'#e06060');R(sx-3,sy-12,2,1,'#e06060');R(sx+1,sy-12,2,1,'#e06060');}
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+6,6,2,0,0,7);ctx.fill();
   const b=c.body||'#d89048',d='#3a2a1e';
@@ -639,6 +682,27 @@ function drawCat(c,sx,sy){
   // しっぽ
   const tw=Math.sin(P.anim*0.08+sx)*1.6;
   R(sx+5,sy-1+tw,2,5,b);R(sx+5,sy+3,3,2,b);
+}
+function catPoseName(id){
+  const cfg=CAT_SPRITES[id],t=(performance.now()+cfg.phase)%11000;
+  if(t>10450&&t<10750)return 'poseC';
+  return Math.floor(t/1600)%2===0?'poseA':'poseB';
+}
+function drawCatSprite(c,cfg,sx,sy){
+  const pose=catPoseName(c.id),frame=cfg.frames[pose]||cfg.frames.poseA;
+  if(!frame)return;
+  const drawH=CAT_DRAW_H,drawW=cfg.cellW/cfg.cellH*drawH;
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  ctx.beginPath();ctx.ellipse(sx,sy+6,7.2,2.4,0,0,7);ctx.fill();
+  const smoothing=ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(frame,sx-drawW/2,sy-drawH,drawW,drawH);
+  ctx.imageSmoothingEnabled=smoothing;
+  if(game.cats[c.id]){
+    R(sx-1,sy-drawH-3,2,2,'#e06060');
+    R(sx-3,sy-drawH-2,2,1,'#e06060');
+    R(sx+1,sy-drawH-2,2,1,'#e06060');
+  }
 }
 
 //============ エンティティ ============
@@ -665,9 +729,9 @@ const SANDO_ENTITIES=[
      {t:'(身ぶり手ぶりで楼門の方を\n 指している)\nThank you! 行ってきます！'}]},
   {id:'cat_torii',type:'cat',x:76,y:218,r:15,sprite:{body:'#d89048',calico:true},name:'気まぐれ猫',act:'なでる',
    react:'…ゴロゴロ。\n(撫でられて満足そう)',learn:'鳥居の根元がお気に入りの昼寝スポットらしい。'},
-  {id:'cat_shop',type:'cat',x:51,y:337,r:15,sprite:{body:'#5a5a5a'},name:'人懐っこい猫',act:'なでる',
+  {id:'cat_shop',type:'cat',x:62,y:304,r:15,sprite:{body:'#5a5a5a'},name:'人懐っこい猫',act:'なでる',
    react:'にゃ〜ん♪\n(すり寄ってきた)',learn:'茶屋の前に住む看板猫。撫でられるのが大好き。'},
-  {id:'cat_lantern',type:'cat',x:129,y:335,r:15,sprite:{body:'#e8d088'},name:'落ち着いた猫',act:'なでる',
+  {id:'cat_lantern',type:'cat',x:116,y:304,r:15,sprite:{body:'#e8d088'},name:'落ち着いた猫',act:'なでる',
    react:'(目を細めて\n のんびりしている)',learn:'灯籠の陰で日向ぼっこするマイペースな猫。'},
   {id:'obj_torii',type:'object',x:90,y:203,r:23,name:'大鳥居',act:'しらべる',
    lines:[{t:'見上げるほど大きな朱色の鳥居。\nくぐると、いよいよ神さまの\n領域や。',
@@ -1036,6 +1100,7 @@ function loop(){if(game.started){updatePlayer();updateNearest();}render();reques
 loadPlayerIdleSprite();
 loadPlayerSideWalkSprite();
 loadPlayerVerticalWalkSprites();
+loadCatSprites();
 loadBackgroundImages();
 enterScene('sando',false);
 updateCatCount();loop();
