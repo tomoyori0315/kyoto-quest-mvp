@@ -55,7 +55,7 @@
           <option value="catOrange">cat-orange-tabby-sheet.png</option>
           <option value="catBlack">cat-black-bandana-sheet.png</option>
           <option value="catCalico">cat-calico-bandana-sheet.png</option>
-          <option value="npcGuide">npc-guide-oldman-sheet.png</option>
+          <optgroup label="NPC" id="npcSheetOptions"></optgroup>
         </select>
       </label>
       <button id="play">再生</button>
@@ -140,6 +140,7 @@
     </div>
 
     <div class="row readout" id="readout"></div>
+    <div class="row readout" id="missing"></div>
     <h2>Config JSON</h2>
     <textarea id="config" readonly></textarea>
     <h2>Sheet Preview</h2>
@@ -150,6 +151,12 @@
 
 <script>
 "use strict";
+const NPC_SHEETS=[
+  {id:"npcGuide",label:"npc-guide-oldman-sheet.png",src:"assets/sprites/npcs/npc-guide-oldman-sheet.png",cols:3,rows:1,mode:"npc"},
+  {id:"npcStudent",label:"npc-student-sheet.png",src:"assets/sprites/npcs/npc-student-sheet.png",cols:3,rows:1,mode:"npc"},
+  {id:"npcChaya",label:"npc-chaya-woman-sheet.png",src:"assets/sprites/npcs/npc-chaya-woman-sheet.png",cols:3,rows:1,mode:"npc"},
+  {id:"npcTourist",label:"npc-tourist-sheet.png",src:"assets/sprites/npcs/npc-tourist-sheet.png",cols:3,rows:1,mode:"npc"}
+];
 const sheets={
   idle4:{src:"assets/sprites/player-idle-4dir.png",cols:4,rows:1,dirs:["down","up","left","right"],idleRow:0,walkRows:[0]},
   sideRight:{src:"assets/sprites/player-walk-side-right.png",cols:3,rows:1,dirs:["right"],idleCol:1,walkCols:[0,1,2,1]},
@@ -159,9 +166,11 @@ const sheets={
   static:{src:"assets/sprites/player-sheet.png",cols:2,rows:2,dirs:["down","up","left","right"],cells:{down:[0,0],up:[1,0],left:[0,1],right:[1,1]},idleRow:0,walkRows:[0]},
   catOrange:{src:"assets/sprites/cats/cat-orange-tabby-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]},
   catBlack:{src:"assets/sprites/cats/cat-black-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]},
-  catCalico:{src:"assets/sprites/cats/cat-calico-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]},
-  npcGuide:{src:"assets/sprites/npcs/npc-guide-oldman-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true}
+  catCalico:{src:"assets/sprites/cats/cat-calico-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]}
 };
+for(const npc of NPC_SHEETS){
+  sheets[npc.id]={src:npc.src,cols:npc.cols,rows:npc.rows,mode:npc.mode,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true};
+}
 const state={sheet:"idle4",dir:"down",pose:"poseA",playing:false,walking:false,swapLR:false,mirrorX:false,frame:0};
 const imgs={};
 const els={
@@ -170,7 +179,7 @@ const els={
   mode:document.getElementById("mode"),swap:document.getElementById("swap"),height:document.getElementById("height"),
   mirror:document.getElementById("mirror"),
   anchorX:document.getElementById("anchorX"),anchorY:document.getElementById("anchorY"),preview:document.getElementById("preview"),
-  readout:document.getElementById("readout"),cropX:document.getElementById("cropX"),cropY:document.getElementById("cropY"),
+  readout:document.getElementById("readout"),missing:document.getElementById("missing"),cropX:document.getElementById("cropX"),cropY:document.getElementById("cropY"),
   cellW:document.getElementById("cellW"),cellH:document.getElementById("cellH"),offsetX:document.getElementById("offsetX"),
   offsetY:document.getElementById("offsetY"),resetCrop:document.getElementById("resetCrop"),config:document.getElementById("config"),
   downOffsetX:document.getElementById("downOffsetX"),downOffsetY:document.getElementById("downOffsetY"),
@@ -181,11 +190,24 @@ const els={
   idleOffsetX:document.getElementById("idleOffsetX"),idleOffsetY:document.getElementById("idleOffsetY"),
   stepBOffsetX:document.getElementById("stepBOffsetX"),stepBOffsetY:document.getElementById("stepBOffsetY")
 };
+function populateNpcSheetOptions(){
+  const group=document.getElementById("npcSheetOptions");
+  group.innerHTML="";
+  for(const npc of NPC_SHEETS){
+    const opt=document.createElement("option");
+    opt.value=npc.id;opt.textContent=npc.label;
+    group.appendChild(opt);
+  }
+}
 function loadImage(src){
   if(imgs[src])return imgs[src];
-  const img=new Image();img.src=src;imgs[src]=img;img.onload=()=>{setDefaultCrop();renderPreview();renderSprite();};
+  const img=new Image();imgs[src]=img;
+  img.onload=()=>{img.failed=false;setDefaultCrop();renderPreview();renderSprite();};
+  img.onerror=()=>{img.failed=true;renderPreview();renderSprite();};
+  img.src=src;
   return img;
 }
+function imageMissing(img){return img.failed||img.complete&&!img.naturalWidth;}
 function cropValues(){
   const s=sheets[state.sheet],img=loadImage(s.src);
   return {
@@ -261,6 +283,7 @@ function currentFrameName(){
 }
 function frameCanvas(){
   const s=sheets[state.sheet],img=loadImage(s.src);
+  if(imageMissing(img))return null;
   if(!img.complete||!img.naturalWidth)return null;
   const [col,row]=currentCell(),cv=cropValues();
   const sx=cv.cropX+col*cv.cellW,sy=cv.cropY+row*cv.cellH;
@@ -275,9 +298,19 @@ function frameCanvas(){
   return c;
 }
 function renderSprite(){
-  const c=frameCanvas();if(!c)return;
+  const s=sheets[state.sheet],img=loadImage(s.src),c=frameCanvas();
+  if(!c){
+    if(imageMissing(img)){
+      els.sprite.removeAttribute("src");
+      els.sprite.style.width="0px";els.sprite.style.height="0px";
+      els.missing.textContent=`画像が見つかりません: ${s.src}`;
+      els.config.value=JSON.stringify({sheet:s.src.split("/").pop(),cols:s.cols,rows:s.rows,error:"image not found"},null,2);
+    }
+    return;
+  }
+  els.missing.textContent="";
   const h=Number(els.height.value),w=c.width/c.height*h;
-  const ax=Number(els.anchorX.value),ay=Number(els.anchorY.value),cv=cropValues(),s=sheets[state.sheet],offsets=directionOffsets();
+  const ax=Number(els.anchorX.value),ay=Number(els.anchorY.value),cv=cropValues(),offsets=directionOffsets();
   const dirOffset=s.poses?{x:0,y:0}:offsets[effectiveDir()];
   const perFrameOffsets=frameOffsets(),frameOffset=s.usesFrameOffsets?(perFrameOffsets[currentFrameName()]||{x:0,y:0}):(!s.poses?perFrameOffsets[currentFrameName()]||{x:0,y:0}:{x:0,y:0});
   const scale=els.stage.clientWidth/180;
@@ -322,7 +355,16 @@ function renderSprite(){
 }
 function renderPreview(){
   const s=sheets[state.sheet],img=loadImage(s.src),c=els.preview,g=c.getContext("2d");
+  if(imageMissing(img)){
+    c.width=420;c.height=120;
+    g.fillStyle="#120f0b";g.fillRect(0,0,c.width,c.height);
+    g.fillStyle="#f0d08a";g.font="18px sans-serif";g.fillText("画像が見つかりません",20,45);
+    g.fillStyle="#cdbb98";g.font="12px monospace";g.fillText(s.src,20,72);
+    els.missing.textContent=`画像が見つかりません: ${s.src}`;
+    return;
+  }
   if(!img.complete||!img.naturalWidth)return;
+  els.missing.textContent="";
   c.width=img.naturalWidth;c.height=img.naturalHeight;
   g.drawImage(img,0,0);
   const cv=cropValues();
@@ -363,9 +405,10 @@ for(const id of ["cropX","cropY","cellW","cellH","offsetX","offsetY","downOffset
 }
 els.resetCrop.onclick=()=>{setDefaultCrop(true);renderPreview();renderSprite();};
 setInterval(()=>{if(state.playing){state.frame++;renderSprite();}},220);
+populateNpcSheetOptions();
 loadImage(sheets.idle4.src);loadImage(sheets.sideRight.src);loadImage(sheets.walkDown.src);loadImage(sheets.walkUp.src);loadImage(sheets.walk.src);loadImage(sheets.static.src);
 loadImage(sheets.catOrange.src);loadImage(sheets.catBlack.src);loadImage(sheets.catCalico.src);
-loadImage(sheets.npcGuide.src);
+for(const npc of NPC_SHEETS)loadImage(sheets[npc.id].src);
 setDefaultCrop();renderSprite();
 </script>
 </body>
