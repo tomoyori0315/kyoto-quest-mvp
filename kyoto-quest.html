@@ -29,8 +29,10 @@
   #hud-top{position:absolute;top:0;left:0;right:0;
     padding:calc(env(safe-area-inset-top) + 8px) 8px 0;display:flex;gap:6px;align-items:flex-start;
     pointer-events:none;z-index:20;}
+  #hud-left{flex:1;min-width:0;max-width:calc(100% - 132px);display:flex;flex-direction:column;gap:5px;}
+  #hud-actions{display:flex;gap:6px;align-items:flex-start;flex:none;}
   #area-name{flex:1;display:flex;align-items:center;gap:7px;padding:7px 10px;
-    font-weight:700;font-size:clamp(13px,3.8vw,17px);letter-spacing:.04em;}
+    font-weight:700;font-size:clamp(12px,3.5vw,16px);line-height:1.25;letter-spacing:.04em;}
   #area-name .torii{width:18px;height:16px;flex:none;}
   #cat-count{padding:7px 9px;font-weight:700;font-size:clamp(12px,3.6vw,16px);
     display:flex;align-items:center;gap:5px;white-space:nowrap;}
@@ -45,9 +47,8 @@
     pointer-events:auto;cursor:pointer;flex:none;font-size:10px;font-weight:700;letter-spacing:.03em;}
   #debug-btn.active{background:linear-gradient(180deg,#2f3b2f,#1b241b);color:#92ff92;border-color:#5eda5e;}
   #debug-btn:active{transform:translateY(1px);}
-  #quest-bar{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 56px);max-width:64%;
-    padding:7px 11px;font-size:clamp(11px,3.2vw,14px);line-height:1.45;color:var(--ink);
-    z-index:18;pointer-events:none;display:flex;gap:7px;align-items:flex-start;}
+  #quest-bar{padding:6px 10px;font-size:clamp(10px,3vw,13px);line-height:1.38;color:var(--ink);
+    pointer-events:none;display:flex;gap:6px;align-items:flex-start;}
   #quest-bar .q-ico{flex:none;font-size:14px;}
   #quest-bar b{color:var(--vermillion-d);}
 
@@ -86,11 +87,20 @@
     font-weight:700;font-size:13px;padding:3px 13px;border-radius:7px;border:2px solid #e9a060;
     box-shadow:0 2px 0 var(--vermillion-d);}
   #dialog .speaker.cat{background:var(--gold);border-color:#f0d27a;color:#3a2a10;box-shadow:0 2px 0 #a87c1e;}
+  #dialog .dialog-layout{display:block;}
+  #dialog.cat-mode .dialog-layout{display:flex;gap:10px;align-items:stretch;}
+  #dialog .dialog-text{min-width:0;position:relative;padding-bottom:12px;}
+  #dialog.cat-mode .dialog-text{flex:1;}
+  #dialog .cat-portrait{display:none;flex:0 0 clamp(86px,26vw,100px);align-items:center;justify-content:center;}
+  #dialog.cat-mode .cat-portrait{display:flex;}
+  #dialog .cat-closeup{display:block;width:100%;max-height:112px;height:auto;object-fit:contain;
+    border:2px solid var(--ui-line);border-radius:10px;background:#f8efd9;box-shadow:0 2px 0 rgba(90,52,24,.3);}
   #dialog .text{color:var(--ink);font-size:clamp(14px,4vw,17px);line-height:1.65;min-height:3.3em;
     margin-top:6px;white-space:pre-wrap;font-weight:500;}
   #dialog .more-tag{display:inline-block;margin-top:6px;font-size:12px;color:var(--vermillion-d);
     font-weight:700;text-decoration:underline;cursor:pointer;}
   #dialog .next{position:absolute;right:14px;bottom:10px;color:var(--vermillion);font-size:18px;animation:bob .8s infinite;}
+  #dialog.cat-mode .next{right:auto;left:16px;bottom:8px;}
   @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(3px);}}
   #dialog .learn{margin-top:8px;padding:8px 10px;background:rgba(217,169,58,.18);
     border-left:3px solid var(--gold);border-radius:5px;font-size:13px;line-height:1.55;color:#5a4418;display:none;}
@@ -115,6 +125,9 @@
   #book .entry{background:rgba(255,255,255,.5);border:1px solid var(--ui-line);border-radius:8px;
     padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.5;color:var(--ink);display:flex;gap:9px;align-items:flex-start;}
   #book .entry .e-ico{font-size:20px;flex:none;}
+  #book .entry.cat-entry{align-items:center;gap:11px;}
+  #book .entry .cat-book-icon{width:58px;height:58px;border-radius:10px;object-fit:cover;flex:none;
+    border:2px solid var(--ui-line);background:#f8efd9;box-shadow:0 2px 0 rgba(90,52,24,.25);}
   #book .entry b{color:var(--vermillion-d);display:block;margin-bottom:2px;font-size:14px;}
   #book .empty{text-align:center;color:#9a8868;padding:30px 10px;font-size:13px;line-height:1.7;}
   #book .close{margin:0 16px 0 22px;padding:11px;text-align:center;background:var(--wood);color:#fff;
@@ -151,25 +164,33 @@
   <canvas id="game"></canvas>
 
   <div id="hud-top">
-    <div class="panel" id="area-name">
-      <svg class="torii" viewBox="0 0 18 16"><rect x="1" y="2" width="16" height="2.5" fill="#c4402a"/><rect x="2" y="5" width="14" height="1.5" fill="#c4402a"/><rect x="3" y="3" width="2.5" height="13" fill="#c4402a"/><rect x="12.5" y="3" width="2.5" height="13" fill="#c4402a"/></svg>
-      <span id="area-label">伏見稲荷 大鳥居前</span>
+    <div id="hud-left">
+      <div class="panel" id="area-name">
+        <svg class="torii" viewBox="0 0 18 16"><rect x="1" y="2" width="16" height="2.5" fill="#c4402a"/><rect x="2" y="5" width="14" height="1.5" fill="#c4402a"/><rect x="3" y="3" width="2.5" height="13" fill="#c4402a"/><rect x="12.5" y="3" width="2.5" height="13" fill="#c4402a"/></svg>
+        <span id="area-label">伏見稲荷 大鳥居前</span>
+      </div>
+      <div class="panel" id="quest-bar">
+        <span class="q-ico">🎯</span>
+        <div><b>次の目標</b><br><span id="quest-text">楼門にお参りしよう</span></div>
+      </div>
     </div>
-    <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/3</div>
-    <div class="panel" id="book-btn"><span class="ico">📒</span><span class="lbl">帳面</span></div>
-    <div class="panel" id="debug-btn">DBG</div>
-  </div>
-
-  <div class="panel" id="quest-bar">
-    <span class="q-ico">🎯</span>
-    <div><b>次の目標</b><br><span id="quest-text">楼門にお参りしよう</span></div>
+    <div id="hud-actions">
+      <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/3</div>
+      <div class="panel" id="book-btn"><span class="ico">📒</span><span class="lbl">帳面</span></div>
+      <div class="panel" id="debug-btn">DBG</div>
+    </div>
   </div>
 
   <div id="dialog"><div class="box">
     <div class="speaker" id="dlg-speaker">案内役</div>
-    <div class="text" id="dlg-text"></div>
-    <div class="learn" id="dlg-learn"></div>
-    <span class="more-tag" id="dlg-more" style="display:none">もっと読む ▾</span>
+    <div class="dialog-layout">
+      <div class="dialog-text">
+        <div class="text" id="dlg-text"></div>
+        <div class="learn" id="dlg-learn"></div>
+        <span class="more-tag" id="dlg-more" style="display:none">もっと読む ▾</span>
+      </div>
+      <div class="cat-portrait"><img class="cat-closeup" id="dlg-cat-img" alt=""></div>
+    </div>
     <div class="next" id="dlg-next">▼</div>
   </div></div>
 
@@ -859,9 +880,12 @@ const SPOT_FULL={
   senbon:{ico:'⛩️',title:'千本鳥居',text:'願いが通るよう奉納された鳥居の連なり。'}
 };
 const CAT_META={
-  cat_torii:{ico:'🐱',name:'気まぐれ猫',text:'鳥居の根元がお気に入りの昼寝スポット。'},
-  cat_shop:{ico:'🐈',name:'人懐っこい猫',text:'茶屋の前に住む看板猫。撫でられ好き。'},
-  cat_lantern:{ico:'🐈‍⬛',name:'落ち着いた猫',text:'灯籠の陰で日向ぼっこするお山の主。'},
+  cat_torii:{ico:'🐱',name:'気まぐれ猫',text:'鳥居の根元がお気に入りの昼寝スポット。',
+    closeup:'assets/ui/cats/cat-calico-closeup.png',icon:'assets/ui/cat-book/cat-calico-icon.png'},
+  cat_shop:{ico:'🐈',name:'人懐っこい猫',text:'茶屋の前に住む看板猫。撫でられ好き。',
+    closeup:'assets/ui/cats/cat-orange-tabby-closeup.png',icon:'assets/ui/cat-book/cat-orange-tabby-icon.png'},
+  cat_lantern:{ico:'🐈‍⬛',name:'落ち着いた猫',text:'灯籠の陰で日向ぼっこするお山の主。',
+    closeup:'assets/ui/cats/cat-black-closeup.png',icon:'assets/ui/cat-book/cat-black-icon.png'},
   cat_honden:{ico:'🐈‍⬛',name:'本殿の黒猫',text:'参拝客を見守る静かな黒猫。'},
   cat_senbon:{ico:'🐱',name:'鳥居の番猫',text:'朱の鳥居に佇む神秘的な猫。'}
 };
@@ -903,6 +927,12 @@ function startDialog(e){
 function showPage(){
   const pg=dlg.lines[dlg.idx],sp=document.getElementById('dlg-speaker');
   sp.textContent=dlg.ent.name;sp.className='speaker'+(dlg.ent.type==='cat'?' cat':'');
+  const dialog=document.getElementById('dialog');
+  const catImg=document.getElementById('dlg-cat-img'),catMeta=CAT_META[dlg.ent.id];
+  if(dlg.ent.type==='cat'&&catMeta?.closeup){
+    dialog.classList.add('cat-mode');
+    catImg.src=catMeta.closeup;catImg.onerror=()=>{dialog.classList.remove('cat-mode');catImg.removeAttribute('src');};
+  }else{dialog.classList.remove('cat-mode');catImg.removeAttribute('src');catImg.onerror=null;}
   document.getElementById('dlg-text').textContent=pg.t;
   const L=document.getElementById('dlg-learn'),M=document.getElementById('dlg-more');
   L.classList.remove('show');L.innerHTML='';
@@ -918,7 +948,7 @@ function advance(){
 }
 function endDialog(){
   const e=dlg.ent;
-  dlg.active=false;document.getElementById('dialog').classList.remove('show');
+  dlg.active=false;document.getElementById('dialog').classList.remove('show','cat-mode');
   if(e.type==='cat'&&!game.cats[e.id]){game.cats[e.id]=true;updateCatCount();toast('🐱','猫帳に登録！',e.name);}
   if(e&&e.visit){recordVisit(e.visit,e.name);
     if(e.id==='honden'){setQuest('千本鳥居へ向かおう');setTimeout(()=>toast('🎉','本殿にお参り完了！','お山めぐりの第一歩や'),700);}
@@ -1022,7 +1052,15 @@ function renderBook(tab){
 function renderEntries(el,items,empty){
   if(!items.length){el.innerHTML=`<div class="empty">${empty}</div>`;return;}
   items.forEach(m=>{const d=document.createElement('div');d.className='entry';
-    d.innerHTML=`<span class="e-ico">${m.ico}</span><div><b>${m.name||m.title}</b>${m.text}</div>`;el.appendChild(d);});
+    if(m.icon){
+      d.classList.add('cat-entry');
+      d.innerHTML=`<img class="cat-book-icon" src="${m.icon}" alt=""><span class="e-ico" style="display:none">${m.ico}</span><div><b>${m.name||m.title}</b>${m.text}</div>`;
+      const img=d.querySelector('img'),fallback=d.querySelector('.e-ico');
+      img.onerror=()=>{img.style.display='none';fallback.style.display='inline-block';};
+    }else{
+      d.innerHTML=`<span class="e-ico">${m.ico}</span><div><b>${m.name||m.title}</b>${m.text}</div>`;
+    }
+    el.appendChild(d);});
 }
 
 //============ 入力 ============
