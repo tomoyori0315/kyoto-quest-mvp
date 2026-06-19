@@ -175,7 +175,7 @@
       </div>
     </div>
     <div id="hud-actions">
-      <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/3</div>
+      <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/<span id="cat-total">0</span></div>
       <div class="panel" id="book-btn"><span class="ico">📒</span><span class="lbl">帳面</span></div>
       <div class="panel" id="debug-btn">DBG</div>
     </div>
@@ -338,6 +338,10 @@ const CAT_SPRITES={
   cat_lantern:{
     src:'assets/sprites/cats/cat-black-bandana-sheet.png',
     img:new Image(),ready:false,cellW:724,cellH:724,phase:5200,frames:{}
+  },
+  cat_honden:{
+    src:'assets/sprites/cats/cat-honden-hachiware-sheet.png',
+    img:new Image(),ready:false,cellW:724,cellH:724,phase:7800,frames:{}
   }
 };
 const NPC_SPRITES={
@@ -378,6 +382,16 @@ const NPC_SPRITES={
       poseA:{x:-5,y:3},
       poseB:{x:1,y:3},
       poseC:{x:6,y:3}
+    },
+    frames:{}
+  },
+  npc_shrine_cleaner:{
+    src:'assets/sprites/npcs/npc-shrine-cleaner-sheet.png',
+    img:new Image(),ready:false,cols:3,cellW:724,cellH:724,drawH:28,phase:4800,
+    frameOffsets:{
+      poseA:{x:-3,y:4},
+      poseB:{x:-1,y:4},
+      poseC:{x:5,y:4}
     },
     frames:{}
   }
@@ -733,7 +747,7 @@ function drawPlayerVerticalWalkFrame(frame,cfg,frameName,sx,sy){
   ctx.drawImage(frame,drawX,drawY,drawW,drawH);
 }
 function drawNPC(n,sx,sy){
-  const npcSprite=NPC_SPRITES[n.id];
+  const npcSprite=NPC_SPRITES[n.spriteKey||n.id];
   if(npcSprite&&npcSprite.ready){
     drawNpcSprite(npcSprite,sx,sy);
     return;
@@ -854,19 +868,25 @@ const SANDO_ENTITIES=[
 ];
 
 const ROMON_ENTITIES=[
-  {id:'honden',type:'object',x:90,y:178,r:34,name:'本殿',act:'お参り',
+  {id:'honden',type:'object',x:90,y:136,r:42,name:'本殿',act:'お参り',
    lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
      learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
-  {id:'temizu',type:'object',x:138,y:224,r:22,name:'手水舎',act:'しらべる',
+  {id:'temizu',type:'object',x:154,y:178,r:22,name:'手水舎',act:'しらべる',
    lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
      learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
-  {id:'fox2',type:'object',x:48,y:206,r:22,name:'楼門の狐像',act:'しらべる',
-   lines:[{t:'口に何かをくわえた狐像。\n稲穂や鍵、玉をくわえてる\nことが多いんやて。',
+  {id:'fox_left',type:'object',x:56,y:158,r:24,name:'左の狐像',act:'しらべる',
+   lines:[{t:'本殿前の左側に立つ狐像。\n口に何かをくわえているみたい。\n稲穂や鍵、玉が多いんやて。',
      learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
-  {id:'cat_honden',type:'cat',x:120,y:264,r:18,sprite:{body:'#3a3a3a'},name:'本殿の黒猫',act:'なでる',
-   react:'(静かにこちらを\n 見上げている)\n…にゃ。',learn:'参拝客を見守る落ち着いた黒猫。'},
-  {id:'to_senbon',type:'exit',x:64,y:318,r:26,name:'千本鳥居へ',act:'すすむ',to:'senbon'},
-  {id:'back_sando',type:'exit',x:118,y:340,r:24,name:'参道へ戻る',act:'もどる',to:'sando'}
+  {id:'fox_right',type:'object',x:124,y:158,r:24,name:'右の狐像',act:'しらべる',
+   lines:[{t:'本殿前の右側にも狐像がある。\n左右で対になって、参拝する人を\n見守っているみたいや。',
+     learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
+  {id:'cat_honden',type:'cat',x:58,y:296,r:18,sprite:{body:'#f4f1e8'},name:'本殿のはちわれ猫',act:'なでる',
+   react:'……にゃ。\n(静かに目を細めている)',learn:'本殿前で参拝客を見守る、落ち着いた白黒はちわれ猫。'},
+  {id:'npc_romon_cleaner',type:'npc',x:48,y:250,r:18,name:'境内を掃除している人',act:'はなす',spriteKey:'npc_shrine_cleaner',
+   lines:[{t:'このあたりは静かに歩くと、\n風の音まで聞こえるんですよ。'},
+     {t:'お参りのあとは、右手の方から\n千本鳥居へ進めます。\n足元に気をつけてくださいね。'}]},
+  {id:'to_senbon',type:'exit',x:156,y:236,r:24,name:'千本鳥居へ',act:'すすむ',to:'senbon'},
+  {id:'back_sando',type:'exit',x:90,y:356,r:24,name:'参道へ戻る',act:'もどる',to:'sando'}
 ];
 
 const SENBON_ENTITIES=[
@@ -907,10 +927,14 @@ const MAPS={
     areaLabel:'伏見稲荷 楼門・本殿前',
     quest:'本殿でお参りしよう',
     worldH:380,
-    spawn:{x:90,y:300,dir:'up'},
-    walkable:{left:34,right:146,top:188,bottom:360},
+    spawn:{x:90,y:330,dir:'up'},
+    walkable:{left:32,right:164,top:142,bottom:364},
     blockers:[
-      {x:138,y:212,halfW:7,halfH:6}
+      {x:56,y:158,halfW:8,halfH:14},
+      {x:124,y:158,halfW:8,halfH:14},
+      {x:154,y:178,halfW:10,halfH:14},
+      {x:30,y:252,halfW:12,halfH:34},
+      {x:160,y:306,halfW:7,halfH:28}
     ],
     entities:ROMON_ENTITIES,
     backgroundType:'code',
@@ -973,7 +997,8 @@ const CAT_META={
     closeup:'assets/ui/cats/cat-orange-tabby-closeup.png',icon:'assets/ui/cat-book/cat-orange-tabby-icon.png'},
   cat_lantern:{ico:'🐈‍⬛',name:'落ち着いた猫',text:'灯籠の陰で日向ぼっこするお山の主。',
     closeup:'assets/ui/cats/cat-black-closeup.png',icon:'assets/ui/cat-book/cat-black-icon.png'},
-  cat_honden:{ico:'🐈‍⬛',name:'本殿の黒猫',text:'参拝客を見守る静かな黒猫。'},
+  cat_honden:{ico:'🐱',name:'本殿のはちわれ猫',text:'本殿前で参拝客を静かに見守る、白黒はちわれの猫。',
+    closeup:'assets/ui/cats/cat-honden-hachiware-closeup.png',icon:'assets/ui/cat-book/cat-honden-hachiware-icon.png'},
   cat_senbon:{ico:'🐱',name:'鳥居の番猫',text:'朱の鳥居に佇む神秘的な猫。'}
 };
 const VISIT_META={
@@ -1070,7 +1095,12 @@ function enterSenbon(){enterScene('senbon');}
 
 //============ 記録・HUD ============
 function recordVisit(id,label){if(!game.visits[id]){game.visits[id]=true;toast('📿','参拝を記録した',label||'');}}
-function updateCatCount(){let n=0;for(const _ in game.cats)n++;document.getElementById('cat-n').textContent=n;}
+function catTargetTotal(){return Object.keys(CAT_META).length;}
+function updateCatCount(){
+  let n=0;for(const _ in game.cats)n++;
+  document.getElementById('cat-n').textContent=n;
+  document.getElementById('cat-total').textContent=catTargetTotal();
+}
 function setQuest(t){game.quest=t;document.getElementById('quest-text').textContent=t;}
 function toast(ico,title,sub){
   const layer=document.getElementById('toast-layer'),el=document.createElement('div');
@@ -1203,7 +1233,7 @@ function render(){
   const list=[];
   for(const e of ENTITIES){list.push({y:e.y,fn:()=>{
     const sx=e.x,sy=e.y-camY;if(sy<-30||sy>VH+30)return;
-    if(e.type==='npc')drawNPC({id:e.id,...e.sprite},sx,sy);
+    if(e.type==='npc')drawNPC({id:e.id,spriteKey:e.spriteKey,...e.sprite},sx,sy);
     else if(e.type==='cat')drawCat({id:e.id,...e.sprite},sx,sy);
     else if(e.type==='exit'){const p=0.5+0.5*Math.sin(P.anim*0.1);
       ctx.fillStyle=`rgba(217,169,58,${0.16+0.16*p})`;ctx.beginPath();ctx.ellipse(sx,sy,12,5,0,0,7);ctx.fill();}
