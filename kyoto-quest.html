@@ -340,6 +340,18 @@ const CAT_SPRITES={
     img:new Image(),ready:false,cellW:724,cellH:724,phase:5200,frames:{}
   }
 };
+const NPC_SPRITES={
+  guide:{
+    src:'assets/sprites/npcs/npc-guide-oldman-sheet.png',
+    img:new Image(),ready:false,cols:3,cellW:724,cellH:724,drawH:26,phase:800,
+    frameOffsets:{
+      poseA:{x:-3,y:3},
+      poseB:{x:1,y:3},
+      poseC:{x:6,y:3}
+    },
+    frames:{}
+  }
+};
 function loadPlayerIdleSprite(){
   const img=PLAYER_IDLE.img;
   img.onload=()=>{
@@ -393,6 +405,22 @@ function loadCatSprites(){
     img.src=cfg.src;
   }
 }
+function loadNpcSprites(){
+  for(const id in NPC_SPRITES){
+    const cfg=NPC_SPRITES[id],img=cfg.img;
+    img.onload=()=>{
+      cfg.ready=false;
+      cfg.frames={};
+      if(img.naturalWidth<cfg.cellW*cfg.cols||img.naturalHeight<cfg.cellH)return;
+      cfg.frames.poseA=makeNpcSpriteFrame(img,cfg,0);
+      cfg.frames.poseB=makeNpcSpriteFrame(img,cfg,1);
+      cfg.frames.poseC=makeNpcSpriteFrame(img,cfg,2);
+      cfg.ready=!!(cfg.frames.poseA&&cfg.frames.poseB&&cfg.frames.poseC);
+    };
+    img.onerror=()=>{cfg.ready=false;};
+    img.src=cfg.src;
+  }
+}
 function makePlayerIdleFrame(img,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=PLAYER_IDLE.cellW;c.height=PLAYER_IDLE.cellH;
@@ -415,6 +443,13 @@ function makePlayerVerticalWalkFrame(img,cfg,col){
   return c;
 }
 function makeCatSpriteFrame(img,cfg,col){
+  const c=document.createElement('canvas'),g=c.getContext('2d');
+  c.width=cfg.cellW;c.height=cfg.cellH;
+  g.drawImage(img,col*cfg.cellW,0,cfg.cellW,cfg.cellH,0,0,c.width,c.height);
+  transparentCreamBackground(c,g);
+  return c;
+}
+function makeNpcSpriteFrame(img,cfg,col){
   const c=document.createElement('canvas'),g=c.getContext('2d');
   c.width=cfg.cellW;c.height=cfg.cellH;
   g.drawImage(img,col*cfg.cellW,0,cfg.cellW,cfg.cellH,0,0,c.width,c.height);
@@ -668,6 +703,11 @@ function drawPlayerVerticalWalkFrame(frame,cfg,frameName,sx,sy){
   ctx.drawImage(frame,drawX,drawY,drawW,drawH);
 }
 function drawNPC(n,sx,sy){
+  const npcSprite=NPC_SPRITES[n.id];
+  if(npcSprite&&npcSprite.ready){
+    drawNpcSprite(npcSprite,sx,sy);
+    return;
+  }
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+14,5.5,2.2,0,0,7);ctx.fill();
   const skin=n.skin||'#e8c4a0';
   R(sx-4,sy-12,8,5,n.hair||'#2a2018');
@@ -676,6 +716,23 @@ function drawNPC(n,sx,sy){
   R(sx-5,sy-5,10,8,n.color);R(sx-5,sy-5,10,2,n.color2||n.color);
   if(n.apron)R(sx-4,sy-1,8,4,n.apron);
   R(sx-4,sy+2,4,4,n.pants||'#3a3a42');R(sx,sy+2,4,4,n.pants||'#3a3a42');
+}
+function npcPoseName(cfg){
+  const t=(performance.now()+cfg.phase)%10500;
+  if(t>9800&&t<10200)return 'poseC';
+  return Math.floor(t/1900)%2===0?'poseA':'poseB';
+}
+function drawNpcSprite(cfg,sx,sy){
+  const pose=npcPoseName(cfg),frame=cfg.frames[pose]||cfg.frames.poseA;
+  if(!frame)return;
+  const drawH=cfg.drawH,drawW=cfg.cellW/cfg.cellH*drawH;
+  const off=cfg.frameOffsets[pose]||cfg.frameOffsets.poseB||{x:0,y:0};
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  ctx.beginPath();ctx.ellipse(sx,sy+12,7,2.6,0,0,7);ctx.fill();
+  const smoothing=ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
+  ctx.imageSmoothingEnabled=smoothing;
 }
 function drawCat(c,sx,sy){
   const catSprite=CAT_SPRITES[c.id];
@@ -1116,7 +1173,7 @@ function render(){
   const list=[];
   for(const e of ENTITIES){list.push({y:e.y,fn:()=>{
     const sx=e.x,sy=e.y-camY;if(sy<-30||sy>VH+30)return;
-    if(e.type==='npc')drawNPC(e.sprite,sx,sy);
+    if(e.type==='npc')drawNPC({id:e.id,...e.sprite},sx,sy);
     else if(e.type==='cat')drawCat({id:e.id,...e.sprite},sx,sy);
     else if(e.type==='exit'){const p=0.5+0.5*Math.sin(P.anim*0.1);
       ctx.fillStyle=`rgba(217,169,58,${0.16+0.16*p})`;ctx.beginPath();ctx.ellipse(sx,sy,12,5,0,0,7);ctx.fill();}
@@ -1138,6 +1195,7 @@ function loop(){if(game.started){updatePlayer();updateNearest();}render();reques
 loadPlayerIdleSprite();
 loadPlayerSideWalkSprite();
 loadPlayerVerticalWalkSprites();
+loadNpcSprites();
 loadCatSprites();
 loadBackgroundImages();
 enterScene('sando',false);
