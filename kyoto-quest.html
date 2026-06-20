@@ -678,10 +678,16 @@ function drawSenbon(camY){
 }
 
 //============ キャラ・猫 ============
+function drawGroundShadow(sx,sy,offY,rx,ry,alpha){
+  ctx.fillStyle=`rgba(0,0,0,${alpha})`;
+  ctx.beginPath();
+  ctx.ellipse(sx,sy+offY,rx,ry,0,0,7);
+  ctx.fill();
+}
 function drawPlayerFallback(sx,sy){
   const walk=P.moving&&((P.anim>>3)&1),leg=walk?1:0;
   const skin='#e8c4a0',hair='#3a2a1c',shirt='#3e7ab0',pants='#3a4658',bag='#b5662e';
-  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(sx,sy+15,6,2.4,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,6,5.4,1.8,.16);
   if(P.dir==='up'){
     R(sx-4,sy-12,8,5,hair);R(sx-5,sy-7,10,9,shirt);R(sx-4,sy-6,8,7,bag);
     R(sx-3,sy-4,2,3,'#8a4a20');R(sx+1,sy-4,2,3,'#8a4a20');
@@ -718,16 +724,14 @@ function drawPlayer(sx,sy){
   if(!PLAYER_IDLE.ready||!frame){drawPlayerFallback(sx,sy);return;}
   const drawH=PLAYER_IDLE.drawH,drawW=PLAYER_IDLE.cellW/PLAYER_IDLE.cellH*drawH;
   const off=PLAYER_IDLE.offsets[P.dir]||{x:0,y:0};
-  ctx.fillStyle='rgba(0,0,0,.24)';
-  ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,5,5.8,1.8,.17);
   ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
 }
 function drawPlayerSideWalkFrame(frame,sx,sy,dir){
   const drawH=PLAYER_SIDE_WALK.drawH,drawW=PLAYER_SIDE_WALK.cellW/PLAYER_SIDE_WALK.cellH*drawH;
   const off=PLAYER_SIDE_WALK.offsets[dir]||PLAYER_SIDE_WALK.offsets.right;
   const drawX=sx-drawW/2+off.x,drawY=sy-drawH+off.y;
-  ctx.fillStyle='rgba(0,0,0,.24)';
-  ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,5,5.8,1.8,.17);
   if(dir==='left'){
     ctx.save();
     ctx.translate(drawX+drawW,drawY);
@@ -742,8 +746,7 @@ function drawPlayerVerticalWalkFrame(frame,cfg,frameName,sx,sy){
   const drawH=cfg.drawH,drawW=cfg.cellW/cfg.cellH*drawH;
   const off=cfg.frameOffsets[frameName]||cfg.frameOffsets.idle||{x:0,y:0};
   const drawX=sx-drawW/2+off.x,drawY=sy-drawH+off.y;
-  ctx.fillStyle='rgba(0,0,0,.24)';
-  ctx.beginPath();ctx.ellipse(sx,sy+8,6.4,2.2,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,5,5.8,1.8,.17);
   ctx.drawImage(frame,drawX,drawY,drawW,drawH);
 }
 function drawNPC(n,sx,sy){
@@ -752,7 +755,7 @@ function drawNPC(n,sx,sy){
     drawNpcSprite(npcSprite,sx,sy);
     return;
   }
-  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+14,5.5,2.2,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,7,5,1.7,.15);
   const skin=n.skin||'#e8c4a0';
   R(sx-4,sy-12,8,5,n.hair||'#2a2018');
   if(n.hat){R(sx-5,sy-13,10,3,n.hat);R(sx-6,sy-11,12,2,n.hat);}
@@ -771,8 +774,7 @@ function drawNpcSprite(cfg,sx,sy){
   if(!frame)return;
   const drawH=cfg.drawH,drawW=cfg.cellW/cfg.cellH*drawH;
   const off=cfg.frameOffsets[pose]||cfg.frameOffsets.poseB||{x:0,y:0};
-  ctx.fillStyle='rgba(0,0,0,.22)';
-  ctx.beginPath();ctx.ellipse(sx,sy+12,7,2.6,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,7,6,2,.16);
   const smoothing=ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled=true;
   ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
@@ -785,7 +787,7 @@ function drawCat(c,sx,sy){
     return;
   }
   if(game.cats[c.id]){R(sx-1,sy-13,2,2,'#e06060');R(sx-3,sy-12,2,1,'#e06060');R(sx+1,sy-12,2,1,'#e06060');}
-  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx,sy+6,6,2,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,3,5.4,1.5,.14);
   const b=c.body||'#d89048',d='#3a2a1e';
   // 丸い体（伏せ気味）
   R(sx-5,sy,11,6,b);R(sx-5,sy,11,2,'#00000010');
@@ -814,8 +816,7 @@ function drawCatSprite(c,cfg,sx,sy){
   const pose=catPoseName(c.id),frame=cfg.frames[pose]||cfg.frames.poseA;
   if(!frame)return;
   const drawH=CAT_DRAW_H,drawW=cfg.cellW/cfg.cellH*drawH;
-  ctx.fillStyle='rgba(0,0,0,.22)';
-  ctx.beginPath();ctx.ellipse(sx,sy+6,7.2,2.4,0,0,7);ctx.fill();
+  drawGroundShadow(sx,sy,3,6.2,1.7,.15);
   const smoothing=ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled=true;
   ctx.drawImage(frame,sx-drawW/2,sy-drawH,drawW,drawH);
