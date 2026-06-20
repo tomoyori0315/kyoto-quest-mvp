@@ -56,6 +56,7 @@
           <option value="catBlack">cat-black-bandana-sheet.png</option>
           <option value="catCalico">cat-calico-bandana-sheet.png</option>
           <option value="catHondenHachiware">cat-honden-hachiware-sheet.png</option>
+          <option value="catSenbonKijishiro">cat-senbon-kijishiro-sheet.png</option>
           <optgroup label="NPC" id="npcSheetOptions"></optgroup>
         </select>
       </label>
@@ -130,14 +131,14 @@
     </div>
     <h2>Frame Offsets</h2>
     <div class="row">
-      <label>stepA offset X <input id="stepAOffsetX" type="number" step="1" value="0"></label>
-      <label>stepA offset Y <input id="stepAOffsetY" type="number" step="1" value="0"></label>
-      <label>idle offset X <input id="idleOffsetX" type="number" step="1" value="0"></label>
-      <label>idle offset Y <input id="idleOffsetY" type="number" step="1" value="0"></label>
+      <label id="stepAOffsetXLabel">stepA offset X <input id="stepAOffsetX" type="number" step="1" value="0"></label>
+      <label id="stepAOffsetYLabel">stepA offset Y <input id="stepAOffsetY" type="number" step="1" value="0"></label>
+      <label id="idleOffsetXLabel">idle offset X <input id="idleOffsetX" type="number" step="1" value="0"></label>
+      <label id="idleOffsetYLabel">idle offset Y <input id="idleOffsetY" type="number" step="1" value="0"></label>
     </div>
     <div class="row">
-      <label>stepB offset X <input id="stepBOffsetX" type="number" step="1" value="0"></label>
-      <label>stepB offset Y <input id="stepBOffsetY" type="number" step="1" value="0"></label>
+      <label id="stepBOffsetXLabel">stepB offset X <input id="stepBOffsetX" type="number" step="1" value="0"></label>
+      <label id="stepBOffsetYLabel">stepB offset Y <input id="stepBOffsetY" type="number" step="1" value="0"></label>
     </div>
 
     <div class="row readout" id="readout"></div>
@@ -166,10 +167,11 @@ const sheets={
   walkUp:{src:"assets/sprites/player-walk-up.png",cols:3,rows:1,dirs:["up"],idleCol:1,walkCols:[0,1,2,1]},
   walk:{src:"assets/sprites/player-walk-sheet.png",cols:4,rows:3,dirs:["down","up","left","right"],idleRow:1,walkRows:[0,1,2,1]},
   static:{src:"assets/sprites/player-sheet.png",cols:2,rows:2,dirs:["down","up","left","right"],cells:{down:[0,0],up:[1,0],left:[0,1],right:[1,1]},idleRow:0,walkRows:[0]},
-  catOrange:{src:"assets/sprites/cats/cat-orange-tabby-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]},
-  catBlack:{src:"assets/sprites/cats/cat-black-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]},
-  catCalico:{src:"assets/sprites/cats/cat-calico-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]},
-  catHondenHachiware:{src:"assets/sprites/cats/cat-honden-hachiware-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"]}
+  catOrange:{src:"assets/sprites/cats/cat-orange-tabby-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true},
+  catBlack:{src:"assets/sprites/cats/cat-black-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true},
+  catCalico:{src:"assets/sprites/cats/cat-calico-bandana-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true},
+  catHondenHachiware:{src:"assets/sprites/cats/cat-honden-hachiware-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true},
+  catSenbonKijishiro:{src:"assets/sprites/cats/cat-senbon-kijishiro-sheet.png",cols:3,rows:1,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true}
 };
 for(const npc of NPC_SHEETS){
   sheets[npc.id]={src:npc.src,cols:npc.cols,rows:npc.rows,mode:npc.mode,poses:["poseA","poseB","poseC"],poseLoop:["poseA","poseB","poseC","poseB"],usesFrameOffsets:true};
@@ -191,7 +193,10 @@ const els={
   rightOffsetX:document.getElementById("rightOffsetX"),rightOffsetY:document.getElementById("rightOffsetY"),
   stepAOffsetX:document.getElementById("stepAOffsetX"),stepAOffsetY:document.getElementById("stepAOffsetY"),
   idleOffsetX:document.getElementById("idleOffsetX"),idleOffsetY:document.getElementById("idleOffsetY"),
-  stepBOffsetX:document.getElementById("stepBOffsetX"),stepBOffsetY:document.getElementById("stepBOffsetY")
+  stepBOffsetX:document.getElementById("stepBOffsetX"),stepBOffsetY:document.getElementById("stepBOffsetY"),
+  stepAOffsetXLabel:document.getElementById("stepAOffsetXLabel"),stepAOffsetYLabel:document.getElementById("stepAOffsetYLabel"),
+  idleOffsetXLabel:document.getElementById("idleOffsetXLabel"),idleOffsetYLabel:document.getElementById("idleOffsetYLabel"),
+  stepBOffsetXLabel:document.getElementById("stepBOffsetXLabel"),stepBOffsetYLabel:document.getElementById("stepBOffsetYLabel")
 };
 function populateNpcSheetOptions(){
   const group=document.getElementById("npcSheetOptions");
@@ -230,7 +235,18 @@ function directionOffsets(){
     right:{x:Number(els.rightOffsetX.value)||0,y:Number(els.rightOffsetY.value)||0}
   };
 }
-function isCatSheet(s){return !!s.poses;}
+function setLabelText(label,text){
+  label.firstChild.nodeValue=text+" ";
+}
+function updateFrameOffsetLabels(){
+  const s=sheets[state.sheet],poseLabels=s.poses&&s.usesFrameOffsets;
+  setLabelText(els.stepAOffsetXLabel,poseLabels?"poseA offset X":"stepA offset X");
+  setLabelText(els.stepAOffsetYLabel,poseLabels?"poseA offset Y":"stepA offset Y");
+  setLabelText(els.idleOffsetXLabel,poseLabels?"poseB offset X":"idle offset X");
+  setLabelText(els.idleOffsetYLabel,poseLabels?"poseB offset Y":"idle offset Y");
+  setLabelText(els.stepBOffsetXLabel,poseLabels?"poseC offset X":"stepB offset X");
+  setLabelText(els.stepBOffsetYLabel,poseLabels?"poseC offset Y":"stepB offset Y");
+}
 function frameOffsets(){
   if(sheets[state.sheet].usesFrameOffsets){
     return {
@@ -396,6 +412,7 @@ els.sheet.onchange=()=>{
   if(state.sheet==="walkDown"){state.dir="down";setActiveDir();}
   if(state.sheet==="walkUp"){state.dir="up";setActiveDir();}
   if(sheets[state.sheet].poses){state.pose="poseA";setActivePose();}
+  updateFrameOffsetLabels();
   loadImage(sheets[state.sheet].src);setDefaultCrop(true);renderPreview();renderSprite();
 };
 els.play.onclick=()=>{state.playing=!state.playing;els.play.classList.toggle("active",state.playing);els.play.textContent=state.playing?"停止":"再生";renderSprite();};
@@ -410,8 +427,9 @@ els.resetCrop.onclick=()=>{setDefaultCrop(true);renderPreview();renderSprite();}
 setInterval(()=>{if(state.playing){state.frame++;renderSprite();}},220);
 populateNpcSheetOptions();
 loadImage(sheets.idle4.src);loadImage(sheets.sideRight.src);loadImage(sheets.walkDown.src);loadImage(sheets.walkUp.src);loadImage(sheets.walk.src);loadImage(sheets.static.src);
-loadImage(sheets.catOrange.src);loadImage(sheets.catBlack.src);loadImage(sheets.catCalico.src);loadImage(sheets.catHondenHachiware.src);
+loadImage(sheets.catOrange.src);loadImage(sheets.catBlack.src);loadImage(sheets.catCalico.src);loadImage(sheets.catHondenHachiware.src);loadImage(sheets.catSenbonKijishiro.src);
 for(const npc of NPC_SHEETS)loadImage(sheets[npc.id].src);
+updateFrameOffsetLabels();
 setDefaultCrop();renderSprite();
 </script>
 </body>

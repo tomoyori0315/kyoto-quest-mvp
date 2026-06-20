@@ -342,6 +342,16 @@ const CAT_SPRITES={
   cat_honden:{
     src:'assets/sprites/cats/cat-honden-hachiware-sheet.png',
     img:new Image(),ready:false,cellW:724,cellH:724,phase:7800,frames:{}
+  },
+  cat_senbon:{
+    src:'assets/sprites/cats/cat-senbon-kijishiro-sheet.png',
+    img:new Image(),ready:false,cellW:724,cellH:724,drawH:30,phase:9400,
+    frameOffsets:{
+      poseA:{x:-4,y:6},
+      poseB:{x:3,y:6},
+      poseC:{x:10,y:6}
+    },
+    frames:{}
   }
 };
 const NPC_SPRITES={
@@ -815,16 +825,17 @@ function catPoseName(id){
 function drawCatSprite(c,cfg,sx,sy){
   const pose=catPoseName(c.id),frame=cfg.frames[pose]||cfg.frames.poseA;
   if(!frame)return;
-  const drawH=CAT_DRAW_H,drawW=cfg.cellW/cfg.cellH*drawH;
+  const drawH=cfg.drawH||CAT_DRAW_H,drawW=cfg.cellW/cfg.cellH*drawH;
+  const off=cfg.frameOffsets?.[pose]||{x:0,y:0};
   drawGroundShadow(sx,sy,3,6.2,1.7,.15);
   const smoothing=ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(frame,sx-drawW/2,sy-drawH,drawW,drawH);
+  ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
   ctx.imageSmoothingEnabled=smoothing;
   if(game.cats[c.id]){
-    R(sx-1,sy-drawH-3,2,2,'#e06060');
-    R(sx-3,sy-drawH-2,2,1,'#e06060');
-    R(sx+1,sy-drawH-2,2,1,'#e06060');
+    R(sx+off.x-1,sy-drawH+off.y-3,2,2,'#e06060');
+    R(sx+off.x-3,sy-drawH+off.y-2,2,1,'#e06060');
+    R(sx+off.x+1,sy-drawH+off.y-2,2,1,'#e06060');
   }
 }
 
@@ -894,9 +905,10 @@ const SENBON_ENTITIES=[
   {id:'obj_senbon',type:'object',x:90,y:160,r:40,name:'千本鳥居',act:'しらべる',
    lines:[{t:'朱色の鳥居がどこまでも続く…！\nまるで朱のトンネルや。',
      learn:'<b>豆知識：千本鳥居</b>\n願いが「通る」よう、江戸時代から鳥居を奉納する習わしが広まったんやて。裏に奉納者の名前があるで。',spot:'senbon'}],visit:'senbon'},
-  {id:'cat_senbon',type:'cat',x:120,y:260,r:16,sprite:{body:'#d8b048',calico:true},name:'鳥居の番猫',act:'なでる',
-   react:'(鳥居の影から\n ひょっこり)\nにゃー。',learn:'朱の鳥居が連なる道に佇む猫。'},
-  {id:'back_romon2',type:'exit',x:90,y:350,r:20,name:'本殿へ戻る',act:'もどる',to:'romon'}
+  {id:'cat_senbon',type:'cat',x:120,y:292,r:18,sprite:{body:'#d8b048'},name:'千本鳥居のキジ白猫',act:'なでる',
+   react:'……にゃ。\n(静かにこちらを見ている)',learn:'千本鳥居の道でひっそり佇む、細身のキジ白猫。'},
+  {id:'to_next',type:'exit',x:90,y:126,r:24,name:'鳥居の奥へ',act:'すすむ',to:'senbon'},
+  {id:'back_romon',type:'exit',x:90,y:356,r:24,name:'楼門・本殿前へ戻る',act:'もどる',to:'romon'}
 ];
 
 const MAPS={
@@ -946,9 +958,9 @@ const MAPS={
     id:'senbon',
     areaLabel:'伏見稲荷 千本鳥居',
     quest:'鳥居の先へ進んでみよう',
-    worldH:400,
-    spawn:{x:90,y:340,dir:'up'},
-    walkable:{left:34,right:146,top:150,bottom:384},
+    worldH:380,
+    spawn:{x:90,y:330,dir:'up'},
+    walkable:{left:52,right:118,top:128,bottom:366},
     blockers:[],
     entities:SENBON_ENTITIES,
     backgroundType:'code',
@@ -1000,7 +1012,8 @@ const CAT_META={
     closeup:'assets/ui/cats/cat-black-closeup.png',icon:'assets/ui/cat-book/cat-black-icon.png'},
   cat_honden:{ico:'🐱',name:'本殿のはちわれ猫',text:'本殿前で参拝客を静かに見守る、白黒はちわれの猫。',
     closeup:'assets/ui/cats/cat-honden-hachiware-closeup.png',icon:'assets/ui/cat-book/cat-honden-hachiware-icon.png'},
-  cat_senbon:{ico:'🐱',name:'鳥居の番猫',text:'朱の鳥居に佇む神秘的な猫。'}
+  cat_senbon:{ico:'🐱',name:'千本鳥居のキジ白猫',text:'千本鳥居の道でひっそり佇む、細身のキジ白猫。',
+    closeup:'assets/ui/cats/cat-senbon-kijishiro-closeup.png',icon:'assets/ui/cat-book/cat-senbon-kijishiro-icon.png'}
 };
 const VISIT_META={
   honden:{ico:'📿',name:'本殿参拝',text:'二礼二拍手一礼でお参りした。'},
