@@ -40,8 +40,8 @@
   #book-btn{width:clamp(40px,11vw,52px);height:clamp(40px,11vw,52px);padding:5px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     pointer-events:auto;cursor:pointer;flex:none;}
-  #book-btn .ico{font-size:clamp(18px,5vw,22px);line-height:1;}
-  #book-btn .lbl{font-size:9px;font-weight:700;}
+  #book-btn .ico{font-size:clamp(17px,4.8vw,21px);line-height:1;display:inline-flex;align-items:center;justify-content:center;width:1.25em;height:1.1em;margin:0 auto -1px;}
+  #book-btn .lbl{font-size:9px;font-weight:700;line-height:1;}
   #book-btn:active{transform:translateY(1px);}
   #debug-btn{width:clamp(36px,9vw,44px);height:clamp(28px,8vw,36px);padding:3px;
     display:flex;align-items:center;justify-content:center;
@@ -109,11 +109,11 @@
   #dialog .learn b{color:var(--vermillion-d);}
 
   #book{position:absolute;inset:0;z-index:40;display:none;background:rgba(20,14,8,.7);
-    backdrop-filter:blur(2px);padding:calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 20px);}
+    backdrop-filter:blur(2px);padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 28px);}
   #book.show{display:flex;flex-direction:column;animation:fade .2s;}
   @keyframes fade{from{opacity:0;}to{opacity:1;}}
   #book .cover{background:linear-gradient(160deg,#f5ecd6,#e6d4ae);border:3px solid var(--wood);
-    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.6);flex:1;display:flex;flex-direction:column;
+    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.6);flex:1;min-height:0;max-height:calc(var(--app-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 42px);display:flex;flex-direction:column;
     overflow:hidden;position:relative;}
   #book .cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;
     background:linear-gradient(90deg,var(--vermillion),var(--vermillion-d));box-shadow:inset -2px 0 4px rgba(0,0,0,.3);}
@@ -122,7 +122,7 @@
   #book .tab{flex:1;padding:7px;text-align:center;font-size:12px;font-weight:700;background:var(--washi-d);
     border:2px solid var(--ui-line);border-radius:7px;color:var(--wood-d);cursor:pointer;}
   #book .tab.active{background:var(--vermillion);color:#fff;border-color:#e9a060;}
-  #book .pages{flex:1;overflow-y:auto;padding:4px 16px 16px 22px;}
+  #book .pages{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px 12px 22px;}
   #book .entry{background:rgba(255,255,255,.5);border:1px solid var(--ui-line);border-radius:8px;
     padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.5;color:var(--ink);display:flex;gap:9px;align-items:flex-start;}
   #book .entry .e-ico{font-size:20px;flex:none;}
@@ -131,7 +131,7 @@
     border:2px solid var(--ui-line);background:#f8efd9;box-shadow:0 2px 0 rgba(90,52,24,.25);}
   #book .entry b{color:var(--vermillion-d);display:block;margin-bottom:2px;font-size:14px;}
   #book .empty{text-align:center;color:#9a8868;padding:30px 10px;font-size:13px;line-height:1.7;}
-  #book .close{margin:0 16px 0 22px;padding:11px;text-align:center;background:var(--wood);color:#fff;
+  #book .close{margin:0 16px 12px 22px;padding:11px;text-align:center;background:var(--wood);color:#fff;
     font-weight:700;border-radius:9px;cursor:pointer;box-shadow:0 3px 0 var(--wood-d);font-size:15px;}
   #book .close:active{transform:translateY(2px);box-shadow:0 1px 0 var(--wood-d);}
 
@@ -158,7 +158,23 @@
     border-radius:30px;cursor:pointer;box-shadow:0 4px 0 #a87c1e;animation:pulse 1.6s infinite;}
   @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
   #title .hint{color:#c89868;font-size:11px;margin-top:18px;line-height:1.6;}
-  #controls,#dpad,.dbtn,#act-cluster,.act,#book-btn,#debug-btn,#start-btn,#dialog{
+  #debug-editor{position:absolute;right:6px;bottom:calc(env(safe-area-inset-bottom) + 154px);z-index:28;
+    width:min(190px,calc(100% - 12px));display:none;background:rgba(20,14,8,.68);border:2px solid rgba(94,218,94,.85);border-radius:8px;color:#eaffea;
+    padding:6px;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;pointer-events:auto;backdrop-filter:blur(3px);}
+  #debug-editor.show{display:block;}
+  #debug-editor .dbg-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:4px 0;}
+  #debug-editor .dbg-head{justify-content:space-between;}
+  #debug-editor .dbg-full{display:block;}
+  #debug-editor.minimized .dbg-full{display:none;}
+  #debug-editor label{display:flex;align-items:center;gap:3px;}
+  #debug-editor input,#debug-editor select{width:48px;background:#e8f6d8;color:#172015;border:1px solid #5eda5e;border-radius:4px;padding:3px;font:inherit;}
+  #debug-editor select{width:92px;}
+  #debug-editor button{background:#d8f0c0;color:#172015;border:1px solid #5eda5e;border-radius:4px;padding:3px 5px;font:inherit;}
+  #debug-editor button:disabled{opacity:.45;}
+  #debug-editor textarea{width:100%;height:38px;background:rgba(7,16,7,.86);color:#caffca;border:1px solid #5eda5e;border-radius:4px;padding:4px;font:inherit;resize:none;}
+  #debug-editor .dbg-info{opacity:.9;line-height:1.35;}
+  #debug-editor input,#debug-editor textarea{-webkit-user-select:text;user-select:text;}
+  #controls,#dpad,.dbtn,#act-cluster,.act,#book-btn,#debug-btn,#start-btn,#dialog,#debug-editor button{
     touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
   }
   @media(max-height:700px){
@@ -176,6 +192,7 @@
     #dialog{bottom:calc(env(safe-area-inset-bottom) + 8px);}
     #dialog .box{padding:12px 14px 14px;}
     #dialog .text{font-size:14px;line-height:1.5;}
+    #debug-editor{right:4px;bottom:calc(env(safe-area-inset-bottom) + 132px);max-height:145px;overflow:auto;}
   }
 </style>
 </head>
@@ -243,6 +260,65 @@
 
   <div id="toast-layer"></div>
 
+  <div id="debug-editor">
+    <div class="dbg-row dbg-head">
+      <b>Blocker</b>
+      <select id="dbg-blocker-select"></select>
+      <button id="dbg-copy">Copy config</button>
+      <button id="dbg-min">min</button>
+    </div>
+    <div class="dbg-full">
+      <div class="dbg-row">
+        <label>x <input id="dbg-bx" type="number" step="1"></label>
+        <label>y <input id="dbg-by" type="number" step="1"></label>
+        <label>w <input id="dbg-bw" type="number" step="1"></label>
+        <label>h <input id="dbg-bh" type="number" step="1"></label>
+      </div>
+      <div class="dbg-row">
+        <span>focus</span><button data-dbg-step="-5">-5</button><button data-dbg-step="-1">-1</button>
+        <button data-dbg-step="1">+1</button><button data-dbg-step="5">+5</button>
+      </div>
+      <div class="dbg-row">
+        <span>W</span><button data-dbg-size="w" data-dbg-size-step="-5">-5</button><button data-dbg-size="w" data-dbg-size-step="-1">-1</button>
+        <button data-dbg-size="w" data-dbg-size-step="1">+1</button><button data-dbg-size="w" data-dbg-size-step="5">+5</button>
+      </div>
+      <div class="dbg-row">
+        <span>H</span><button data-dbg-size="h" data-dbg-size-step="-5">-5</button><button data-dbg-size="h" data-dbg-size-step="-1">-1</button>
+        <button data-dbg-size="h" data-dbg-size-step="1">+1</button><button data-dbg-size="h" data-dbg-size-step="5">+5</button>
+      </div>
+      <div class="dbg-row">
+        <button id="dbg-add">Add</button>
+        <button id="dbg-dup">Duplicate</button>
+        <button id="dbg-del">Delete</button>
+        <button id="dbg-round">Round</button>
+      </div>
+      <div class="dbg-row">
+        <b>Player</b>
+        <label>collision <input id="dbg-player-r" type="number" step="1" min="0"></label>
+      </div>
+      <div class="dbg-row">
+        <span>R</span><button data-dbg-player-step="-5">-5</button><button data-dbg-player-step="-1">-1</button>
+        <button data-dbg-player-step="1">+1</button><button data-dbg-player-step="5">+5</button>
+      </div>
+      <div class="dbg-row dbg-head">
+        <b>Entity</b>
+        <select id="dbg-entity-select"></select>
+      </div>
+      <div class="dbg-row">
+        <label>x <input id="dbg-ex" type="number" step="1"></label>
+        <label>y <input id="dbg-ey" type="number" step="1"></label>
+        <label>r <input id="dbg-er" type="number" step="1" min="1"></label>
+      </div>
+      <div class="dbg-row">
+        <span>entity</span><button data-dbg-entity-step="-5">-5</button><button data-dbg-entity-step="-1">-1</button>
+        <button data-dbg-entity-step="1">+1</button><button data-dbg-entity-step="5">+5</button>
+      </div>
+      <div class="dbg-info" id="dbg-info"></div>
+      <textarea id="dbg-map-output" readonly></textarea>
+    </div>
+    <span id="dbg-copy-status"></span>
+  </div>
+
   <div id="title">
     <svg class="torii-big" viewBox="0 0 100 90">
       <rect x="6" y="14" width="88" height="11" rx="2" fill="#c4402a"/>
@@ -287,6 +363,8 @@ function floorBot(){ return MAPS[SCENE].walkable.bottom; }
 
 let P={x:90,y:300,dir:'up',moving:false,anim:0,speed:1.1};
 let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null,debug:false};
+let PLAYER_COLLISION_R=0;
+let debugEditor={selected:0,entitySelected:0,dragging:false,dragOffsetX:0,dragOffsetY:0,minimized:false};
 
 function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
@@ -817,7 +895,11 @@ function drawNpcSprite(cfg,sx,sy){
   drawGroundShadow(sx,sy,7,6,2,.16);
   const smoothing=ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(frame,sx-drawW/2+off.x,sy-drawH+off.y,drawW,drawH);
+  const dx=Math.round(sx-drawW/2+off.x),dy=Math.round(sy-drawH+off.y);
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.drawImage(frame,dx,dy,Math.abs(drawW),Math.abs(drawH));
+  ctx.restore();
   ctx.imageSmoothingEnabled=smoothing;
 }
 function drawCat(c,sx,sy){
@@ -955,15 +1037,14 @@ const MAPS={
     spawn:{x:90,y:336,dir:'up'},
     walkable:{left:45,right:140,top:154,bottom:374},
     blockers:[
-      {x:59,y:154,halfW:7,halfH:34},
-      {x:121,y:154,halfW:7,halfH:34},
-      {x:54,y:181,halfW:7,halfH:13},
-      {x:139,y:174,halfW:4,halfH:9},
+      {x:60,y:161,halfW:8.5,halfH:34},
+      {x:123,y:159,halfW:14.5,halfH:34},
+      {x:49,y:193,halfW:7,halfH:13},
+      {x:140,y:202,halfW:7.5,halfH:12.5},
       {x:151,y:151,halfW:4,halfH:12},
-      {x:43,y:236,halfW:5,halfH:12},
-      {x:132,y:236,halfW:5,halfH:12},
-      {x:136,y:287,halfW:7,halfH:34},
-      {x:136,y:337,halfW:6,halfH:22}
+      {x:46,y:213,halfW:5,halfH:12},
+      {x:141,y:247,halfW:12,halfH:28.5},
+      {x:148,y:293,halfW:7,halfH:34}
     ],
     entities:SANDO_ENTITIES,
     backgroundType:'code',
@@ -978,11 +1059,13 @@ const MAPS={
     spawn:{x:90,y:330,dir:'up'},
     walkable:{left:32,right:164,top:142,bottom:364},
     blockers:[
-      {x:56,y:158,halfW:8,halfH:14},
-      {x:124,y:158,halfW:8,halfH:14},
-      {x:154,y:178,halfW:10,halfH:14},
-      {x:30,y:252,halfW:12,halfH:34},
-      {x:160,y:306,halfW:7,halfH:28}
+      {x:42,y:189,halfW:20,halfH:32},
+      {x:49,y:148,halfW:15,halfH:14},
+      {x:137,y:154,halfW:17,halfH:15.5},
+      {x:142,y:180,halfW:23.5,halfH:15.5},
+      {x:30,y:326,halfW:12,halfH:42},
+      {x:155,y:332,halfW:8.5,halfH:33.5},
+      {x:164,y:239,halfW:14,halfH:26.5}
     ],
     entities:ROMON_ENTITIES,
     backgroundType:'code',
@@ -1058,10 +1141,11 @@ const VISIT_META={
 //============ 当たり判定 ============
 function canWalk(x,y){
   const map=MAPS[SCENE],w=map.walkable;
-  if(x<w.left||x>w.right)return false;
-  if(y<w.top+6||y>w.bottom)return false;
+  const r=PLAYER_COLLISION_R;
+  if(x-r<w.left||x+r>w.right)return false;
+  if(y-r<w.top+6||y+r>w.bottom)return false;
   for(const b of map.blockers){
-    if(Math.abs(x-b.x)<b.halfW&&Math.abs(y-b.y)<b.halfH)return false;
+    if(Math.abs(x-b.x)<b.halfW+r&&Math.abs(y-b.y)<b.halfH+r)return false;
   }
   return true;
 }
@@ -1141,6 +1225,7 @@ function enterScene(sceneId,showToast=true,spawnOverride=null){
   document.getElementById('area-label').textContent=map.areaLabel;
   setQuest(map.quest);
   ENTITIES=map.entities.map(o=>({...o}));
+  debugEditor.selected=0;debugEditor.entitySelected=0;updateDebugEditor();
   if(showToast)toast('⛩️',map.areaLabel,map.toastSub||'');
 }
 function enterSando(){enterScene('sando');}
@@ -1167,12 +1252,173 @@ function toast(ico,title,sub){
 function toggleDebug(){
   game.debug=!game.debug;
   document.getElementById('debug-btn').classList.toggle('active',game.debug);
+  updateDebugEditor();
+}
+function debugConfigText(){
+  const map=MAPS[SCENE];
+  return JSON.stringify({
+    scene:SCENE,
+    walkable:map.walkable,
+    blockers:map.blockers,
+    playerCollisionRadius:PLAYER_COLLISION_R,
+    entities:ENTITIES.map(e=>({id:e.id,type:e.type,x:e.x,y:e.y,r:e.r}))
+  },null,2);
+}
+function updateDebugEditor(){
+  const editor=document.getElementById('debug-editor');
+  editor.classList.toggle('show',game.debug);
+  editor.classList.toggle('minimized',debugEditor.minimized);
+  if(!game.debug)return;
+  const map=MAPS[SCENE],sel=document.getElementById('dbg-blocker-select'),entSel=document.getElementById('dbg-entity-select');
+  const count=map.blockers.length;
+  debugEditor.selected=Math.max(0,Math.min(debugEditor.selected,count-1));
+  debugEditor.entitySelected=Math.max(0,Math.min(debugEditor.entitySelected,ENTITIES.length-1));
+  sel.innerHTML='';
+  map.blockers.forEach((b,i)=>{
+    const opt=document.createElement('option');
+    opt.value=i;opt.textContent=`${i}: x${Math.round(b.x)} y${Math.round(b.y)} w${Math.round(b.halfW*2)} h${Math.round(b.halfH*2)}`;
+    sel.appendChild(opt);
+  });
+  if(!count){
+    const opt=document.createElement('option');opt.value='';opt.textContent='blockerなし';sel.appendChild(opt);
+  }
+  sel.value=String(debugEditor.selected);
+  const b=map.blockers[debugEditor.selected];
+  entSel.innerHTML='';
+  ENTITIES.forEach((e,i)=>{
+    const opt=document.createElement('option');
+    opt.value=i;opt.textContent=`${i}: ${e.id||e.name} ${e.type} x${Math.round(e.x)} y${Math.round(e.y)} r${Math.round(e.r)}`;
+    entSel.appendChild(opt);
+  });
+  if(!ENTITIES.length){
+    const opt=document.createElement('option');opt.value='';opt.textContent='entityなし';entSel.appendChild(opt);
+  }
+  entSel.value=String(debugEditor.entitySelected);
+  const ent=ENTITIES[debugEditor.entitySelected];
+  for(const [id,val] of [['dbg-bx',b?.x],['dbg-by',b?.y],['dbg-bw',b?b.halfW*2:null],['dbg-bh',b?b.halfH*2:null]]){
+    const input=document.getElementById(id);
+    input.disabled=!b;input.value=b?Math.round(val):'';
+  }
+  document.getElementById('dbg-player-r').value=Math.round(PLAYER_COLLISION_R);
+  for(const [id,val] of [['dbg-ex',ent?.x],['dbg-ey',ent?.y],['dbg-er',ent?.r]]){
+    const input=document.getElementById(id);
+    input.disabled=!ent;input.value=ent?Math.round(val):'';
+  }
+  document.getElementById('dbg-dup').disabled=!b;
+  document.getElementById('dbg-del').disabled=!b;
+  const info=document.getElementById('dbg-info');
+  const selectedText=b?` selected=${debugEditor.selected} x${b.x} y${b.y} w${Math.round(b.halfW*2)} h${Math.round(b.halfH*2)}`:' selected=none';
+  const entText=ent?` entity=${ent.id||ent.name} r${ent.r}`:' entity=none';
+  info.textContent=`scene=${SCENE}${selectedText}${entText} playerCollision=${PLAYER_COLLISION_R}px`;
+  document.getElementById('dbg-min').textContent=debugEditor.minimized?'max':'min';
+  document.getElementById('dbg-map-output').value=debugConfigText();
+}
+function selectedBlocker(){
+  return MAPS[SCENE].blockers[debugEditor.selected]||null;
+}
+function selectedEntity(){
+  return ENTITIES[debugEditor.entitySelected]||null;
+}
+function syncSelectedEntityToMap(){
+  const ent=selectedEntity(),src=MAPS[SCENE].entities[debugEditor.entitySelected];
+  if(ent&&src){src.x=ent.x;src.y=ent.y;src.r=ent.r;}
+}
+function debugStatus(text){
+  const status=document.getElementById('dbg-copy-status');
+  status.textContent=text;setTimeout(()=>status.textContent='',1200);
+}
+function applyDebugEditorInputs(){
+  const b=selectedBlocker();if(!b)return;
+  const w=Math.max(2,Math.round(Number(document.getElementById('dbg-bw').value)||2));
+  const h=Math.max(2,Math.round(Number(document.getElementById('dbg-bh').value)||2));
+  b.x=Math.round(Number(document.getElementById('dbg-bx').value)||0);
+  b.y=Math.round(Number(document.getElementById('dbg-by').value)||0);
+  b.halfW=w/2;
+  b.halfH=h/2;
+  updateDebugEditor();
+}
+function nudgeSelectedBlocker(step){
+  const b=selectedBlocker();if(!b)return;
+  const ids=['dbg-bx','dbg-by','dbg-bw','dbg-bh'];
+  const el=ids.includes(document.activeElement?.id)?document.activeElement:document.getElementById('dbg-bx');
+  el.value=(Number(el.value)||0)+step;
+  applyDebugEditorInputs();
+  el.focus();
+}
+function nudgeBlockerSize(which,step){
+  const id=which==='h'?'dbg-bh':'dbg-bw';
+  const el=document.getElementById(id);
+  el.value=Math.max(2,(Number(el.value)||2)+step);
+  applyDebugEditorInputs();
+  el.focus();
+}
+function applyPlayerCollisionInput(){
+  const el=document.getElementById('dbg-player-r');
+  PLAYER_COLLISION_R=Math.max(0,Math.round(Number(el.value)||0));
+  updateDebugEditor();
+}
+function nudgePlayerCollision(step){
+  const el=document.getElementById('dbg-player-r');
+  el.value=Math.max(0,(Number(el.value)||0)+step);
+  applyPlayerCollisionInput();
+  el.focus();
+}
+function applyEntityEditorInputs(){
+  const ent=selectedEntity();if(!ent)return;
+  ent.x=Math.round(Number(document.getElementById('dbg-ex').value)||0);
+  ent.y=Math.round(Number(document.getElementById('dbg-ey').value)||0);
+  ent.r=Math.max(1,Math.round(Number(document.getElementById('dbg-er').value)||1));
+  syncSelectedEntityToMap();
+  updateDebugEditor();
+}
+function nudgeSelectedEntity(step){
+  const ent=selectedEntity();if(!ent)return;
+  const ids=['dbg-ex','dbg-ey','dbg-er'];
+  const el=ids.includes(document.activeElement?.id)?document.activeElement:document.getElementById('dbg-er');
+  const min=el.id==='dbg-er'?1:0;
+  el.value=Math.max(min,(Number(el.value)||min)+step);
+  applyEntityEditorInputs();
+  el.focus();
+}
+function addBlocker(){
+  const map=MAPS[SCENE];
+  const x=Math.round(P?.x||90),y=Math.round(P?.y||220);
+  map.blockers.push({x,y,halfW:8,halfH:16});
+  debugEditor.selected=map.blockers.length-1;
+  updateDebugEditor();debugStatus('added');
+}
+function duplicateBlocker(){
+  const map=MAPS[SCENE],b=selectedBlocker();if(!b)return;
+  map.blockers.push({x:Math.round(b.x+4),y:Math.round(b.y+4),halfW:b.halfW,halfH:b.halfH});
+  debugEditor.selected=map.blockers.length-1;
+  updateDebugEditor();debugStatus('duplicated');
+}
+function deleteBlocker(){
+  const map=MAPS[SCENE],b=selectedBlocker();if(!b)return;
+  if(!confirm(`Delete blocker ${debugEditor.selected}?`))return;
+  map.blockers.splice(debugEditor.selected,1);
+  debugEditor.selected=Math.max(0,Math.min(debugEditor.selected,map.blockers.length-1));
+  updateDebugEditor();debugStatus('deleted');
+}
+function roundBlockers(){
+  const map=MAPS[SCENE];
+  map.blockers.forEach(b=>{
+    b.x=Math.round(b.x);b.y=Math.round(b.y);
+    b.halfW=Math.max(1,Math.round(b.halfW));b.halfH=Math.max(1,Math.round(b.halfH));
+  });
+  updateDebugEditor();debugStatus('rounded');
 }
 function debugLabel(text,x,y){
   ctx.font='6px monospace';ctx.textBaseline='top';
   const w=ctx.measureText(text).width+3;
   ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(x-1,y-1,w,8);
   ctx.fillStyle='#ffffff';ctx.fillText(text,x,y);
+}
+function debugEntityColor(type){
+  if(type==='cat')return {stroke:'rgba(255,226,80,.95)',fill:'rgba(255,226,80,.14)'};
+  if(type==='npc')return {stroke:'rgba(205,120,255,.95)',fill:'rgba(205,120,255,.14)'};
+  if(type==='exit')return {stroke:'rgba(80,255,140,.95)',fill:'rgba(80,255,140,.14)'};
+  return {stroke:'rgba(255,150,64,.95)',fill:'rgba(255,150,64,.14)'};
 }
 function drawDebug(camY){
   const map=MAPS[SCENE],w=map.walkable;
@@ -1186,20 +1432,44 @@ function drawDebug(camY){
 
   ctx.fillStyle='rgba(255,80,80,.22)';
   ctx.strokeStyle='rgba(255,80,80,.95)';
-  for(const b of map.blockers){
+  for(let i=0;i<map.blockers.length;i++){
+    const b=map.blockers[i],selected=i===debugEditor.selected;
     const x=b.x-b.halfW,y=b.y-camY-b.halfH,wid=b.halfW*2,hei=b.halfH*2;
+    ctx.fillStyle=selected?'rgba(255,220,64,.28)':'rgba(255,80,80,.22)';
+    ctx.strokeStyle=selected?'rgba(255,240,80,1)':'rgba(255,80,80,.95)';
+    ctx.lineWidth=selected?2:1;
     ctx.fillRect(x,y,wid,hei);ctx.strokeRect(x+.5,y+.5,wid,hei);
+    if(selected){
+      const hs=3;
+      ctx.fillStyle='rgba(255,255,255,.95)';
+      ctx.strokeStyle='rgba(70,40,0,.95)';
+      for(const [hx,hy] of [[x,y],[x+wid,y],[x,y+hei],[x+wid,y+hei]]){
+        ctx.fillRect(hx-hs/2,hy-hs/2,hs,hs);
+        ctx.strokeRect(hx-hs/2+.5,hy-hs/2+.5,hs,hs);
+      }
+    }
   }
+  ctx.lineWidth=1;
 
   ctx.font='6px monospace';
-  for(const e of ENTITIES){
+  for(let i=0;i<ENTITIES.length;i++){
+    const e=ENTITIES[i],selected=i===debugEditor.entitySelected;
     const sy=e.y-camY;if(sy<-40||sy>VH+40)continue;
-    ctx.strokeStyle=e.type==='exit'?'rgba(255,220,64,.95)':e.type==='cat'?'rgba(255,120,255,.95)':'rgba(80,200,255,.95)';
-    ctx.fillStyle=e.type==='exit'?'rgba(255,220,64,.12)':e.type==='cat'?'rgba(255,120,255,.12)':'rgba(80,200,255,.12)';
+    const col=debugEntityColor(e.type);
+    ctx.strokeStyle=selected?'rgba(255,255,255,1)':col.stroke;
+    ctx.fillStyle=col.fill;
+    ctx.lineWidth=selected?2:1;
     ctx.beginPath();ctx.arc(e.x,sy,e.r,0,7);ctx.fill();ctx.stroke();
-    R(e.x-1,sy-1,3,3,'#ffffff');
+    R(e.x-1,sy-1,3,3,selected?'#fff4a0':'#ffffff');
     debugLabel(e.id||e.name,e.x+3,sy-e.r-8);
   }
+  ctx.lineWidth=1;
+
+  const pr=Math.max(PLAYER_COLLISION_R,2);
+  ctx.strokeStyle='rgba(80,220,255,.95)';
+  ctx.fillStyle='rgba(80,220,255,.12)';
+  ctx.beginPath();ctx.arc(P.x,P.y-camY,pr,0,7);ctx.fill();ctx.stroke();
+  debugLabel(`player r${PLAYER_COLLISION_R}`,P.x+4,P.y-camY-pr-9);
 
   ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(3,3,86,20);
   ctx.fillStyle='#92ff92';ctx.font='7px monospace';ctx.textBaseline='top';
@@ -1249,6 +1519,71 @@ function bindDir(id,dir){
 }
 bindDir('d-up','up');bindDir('d-down','down');bindDir('d-left','left');bindDir('d-right','right');
 suppressNativeTouch('controls');suppressNativeTouch('hud-actions');suppressNativeTouch('dialog');suppressNativeTouch('start-btn');
+document.getElementById('dbg-blocker-select').addEventListener('change',e=>{debugEditor.selected=Number(e.target.value)||0;updateDebugEditor();});
+document.getElementById('dbg-entity-select').addEventListener('change',e=>{debugEditor.entitySelected=Number(e.target.value)||0;updateDebugEditor();});
+for(const id of ['dbg-bx','dbg-by','dbg-bw','dbg-bh']){
+  document.getElementById(id).addEventListener('input',applyDebugEditorInputs);
+}
+document.getElementById('dbg-player-r').addEventListener('input',applyPlayerCollisionInput);
+for(const id of ['dbg-ex','dbg-ey','dbg-er']){
+  document.getElementById(id).addEventListener('input',applyEntityEditorInputs);
+}
+document.querySelectorAll('[data-dbg-step]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+  e.preventDefault();nudgeSelectedBlocker(Number(btn.dataset.dbgStep)||0);
+}));
+document.querySelectorAll('[data-dbg-size]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+  e.preventDefault();nudgeBlockerSize(btn.dataset.dbgSize,Number(btn.dataset.dbgSizeStep)||0);
+}));
+document.querySelectorAll('[data-dbg-player-step]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+  e.preventDefault();nudgePlayerCollision(Number(btn.dataset.dbgPlayerStep)||0);
+}));
+document.querySelectorAll('[data-dbg-entity-step]').forEach(btn=>btn.addEventListener('pointerdown',e=>{
+  e.preventDefault();nudgeSelectedEntity(Number(btn.dataset.dbgEntityStep)||0);
+}));
+document.getElementById('dbg-min').addEventListener('pointerdown',e=>{
+  e.preventDefault();debugEditor.minimized=!debugEditor.minimized;updateDebugEditor();
+});
+document.getElementById('dbg-add').addEventListener('pointerdown',e=>{e.preventDefault();addBlocker();});
+document.getElementById('dbg-dup').addEventListener('pointerdown',e=>{e.preventDefault();duplicateBlocker();});
+document.getElementById('dbg-del').addEventListener('pointerdown',e=>{e.preventDefault();deleteBlocker();});
+document.getElementById('dbg-round').addEventListener('pointerdown',e=>{e.preventDefault();roundBlockers();});
+document.getElementById('dbg-copy').addEventListener('pointerdown',async e=>{
+  e.preventDefault();
+  const out=document.getElementById('dbg-map-output'),status=document.getElementById('dbg-copy-status');
+  out.value=debugConfigText();out.select();
+  try{await navigator.clipboard.writeText(out.value);status.textContent='copied';}
+  catch(_){status.textContent='select text';}
+  setTimeout(()=>status.textContent='',1200);
+});
+function pointerToWorld(e){
+  const rect=cvs.getBoundingClientRect(),scaleX=VW/rect.width,scaleY=VH/rect.height;
+  const sx=(e.clientX-rect.left)*scaleX,screenY=(e.clientY-rect.top)*scaleY;
+  const maxCam=Math.max(0,WORLD_H-VH);
+  const camY=Math.max(0,Math.min((P.y-floorTop())*0.35,maxCam));
+  return {x:sx,y:screenY+camY};
+}
+cvs.addEventListener('pointerdown',e=>{
+  if(!game.debug)return;
+  const p=pointerToWorld(e),bs=MAPS[SCENE].blockers;
+  for(let i=bs.length-1;i>=0;i--){
+    const b=bs[i];
+    if(Math.abs(p.x-b.x)<=b.halfW&&Math.abs(p.y-b.y)<=b.halfH){
+      e.preventDefault();debugEditor.selected=i;debugEditor.dragging=true;
+      debugEditor.dragOffsetX=p.x-b.x;debugEditor.dragOffsetY=p.y-b.y;
+      cvs.setPointerCapture?.(e.pointerId);updateDebugEditor();return;
+    }
+  }
+});
+cvs.addEventListener('pointermove',e=>{
+  if(!game.debug||!debugEditor.dragging)return;
+  e.preventDefault();
+  const b=selectedBlocker(),p=pointerToWorld(e);if(!b)return;
+  b.x=Math.round(p.x-debugEditor.dragOffsetX);b.y=Math.round(p.y-debugEditor.dragOffsetY);
+  updateDebugEditor();
+});
+for(const ev of ['pointerup','pointercancel','lostpointercapture']){
+  cvs.addEventListener(ev,()=>{debugEditor.dragging=false;});
+}
 document.getElementById('act-main').addEventListener('pointerdown',e=>{e.preventDefault();doAction();});
 document.getElementById('dialog').addEventListener('pointerdown',e=>{e.preventDefault();if(dlg.active)advance();});
 document.getElementById('book-btn').addEventListener('pointerdown',e=>{e.preventDefault();
