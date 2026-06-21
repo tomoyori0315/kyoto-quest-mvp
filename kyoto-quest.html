@@ -10,14 +10,15 @@
     --wood:#7a4b2a; --wood-d:#5a3418;
     --washi:#f0e6cf; --washi-d:#e0d2b0;
     --ink:#2a2018; --gold:#d9a93a; --ui-line:#caa35f;
+    --app-height:100vh; --dpad-size:132px; --dpad-cell:44px;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
   html,body{height:100%;overflow:hidden;background:#1a140e;}
   body{display:flex;align-items:center;justify-content:center;
     font-family:'Hiragino Maru Gothic ProN','Yu Gothic','YuGothic','Meiryo',sans-serif;
     background:radial-gradient(circle at 30% 20%,#241a12 0%,#14100b 80%);}
-  #wrap{position:relative;width:100vw;height:100vh;
-    max-width:min(100vw,calc(100vh*0.5625));max-height:min(100vh,calc(100vw*1.7778));
+  #wrap{position:relative;width:100vw;height:var(--app-height);
+    max-width:min(100vw,calc(var(--app-height)*0.5625));max-height:min(var(--app-height),calc(100vw*1.7778));
     aspect-ratio:9/16;background:#000;
     box-shadow:0 0 0 3px var(--wood-d),0 0 40px rgba(0,0,0,.7);overflow:hidden;}
   canvas{position:absolute;inset:0;width:100%;height:100%;
@@ -55,16 +56,16 @@
   #controls{position:absolute;left:0;right:0;bottom:0;
     padding:0 10px calc(env(safe-area-inset-bottom) + 12px);
     display:flex;justify-content:space-between;align-items:flex-end;z-index:20;pointer-events:none;}
-  #dpad{position:relative;width:132px;height:132px;pointer-events:auto;flex:none;touch-action:none;}
-  .dbtn{position:absolute;width:44px;height:44px;background:linear-gradient(180deg,#f3ead4,#dcc9a4);
+  #dpad{position:relative;width:var(--dpad-size);height:var(--dpad-size);pointer-events:auto;flex:none;touch-action:none;}
+  .dbtn{position:absolute;width:var(--dpad-cell);height:var(--dpad-cell);background:linear-gradient(180deg,#f3ead4,#dcc9a4);
     border:2px solid var(--ui-line);color:var(--wood-d);display:flex;align-items:center;justify-content:center;
     font-size:18px;box-shadow:0 2px 0 rgba(90,52,24,.5);}
   .dbtn:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(90,52,24,.5);}
-  #d-up{top:0;left:44px;border-radius:10px 10px 4px 4px;}
-  #d-down{bottom:0;left:44px;border-radius:4px 4px 10px 10px;}
-  #d-left{top:44px;left:0;border-radius:10px 4px 4px 10px;}
-  #d-right{top:44px;right:0;border-radius:4px 10px 10px 4px;}
-  #d-center{top:44px;left:44px;width:44px;height:44px;
+  #d-up{top:0;left:var(--dpad-cell);border-radius:10px 10px 4px 4px;}
+  #d-down{bottom:0;left:var(--dpad-cell);border-radius:4px 4px 10px 10px;}
+  #d-left{top:var(--dpad-cell);left:0;border-radius:10px 4px 4px 10px;}
+  #d-right{top:var(--dpad-cell);right:0;border-radius:4px 10px 10px 4px;}
+  #d-center{top:var(--dpad-cell);left:var(--dpad-cell);width:var(--dpad-cell);height:var(--dpad-cell);
     background:radial-gradient(circle,#e8d8b4,#cdb888);border:2px solid var(--ui-line);}
   #act-cluster{display:flex;gap:9px;align-items:flex-end;pointer-events:auto;padding-bottom:6px;}
   .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
@@ -157,6 +158,25 @@
     border-radius:30px;cursor:pointer;box-shadow:0 4px 0 #a87c1e;animation:pulse 1.6s infinite;}
   @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
   #title .hint{color:#c89868;font-size:11px;margin-top:18px;line-height:1.6;}
+  #controls,#dpad,.dbtn,#act-cluster,.act,#book-btn,#debug-btn,#start-btn,#dialog{
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+  }
+  @media(max-height:700px){
+    :root{--dpad-size:120px;--dpad-cell:40px;}
+    #hud-top{padding:calc(env(safe-area-inset-top) + 5px) 6px 0;gap:5px;}
+    #hud-left{max-width:calc(100% - 120px);gap:4px;}
+    #area-name{padding:5px 8px;font-size:12px;}
+    #quest-bar{padding:5px 8px;font-size:10px;line-height:1.25;}
+    #cat-count{padding:5px 7px;font-size:12px;}
+    #book-btn{width:40px;height:40px;padding:4px;}
+    #debug-btn{width:36px;height:28px;}
+    #controls{padding:0 8px calc(env(safe-area-inset-bottom) + 7px);}
+    #act-cluster{padding-bottom:3px;}
+    .act .circle{width:48px;height:48px;}
+    #dialog{bottom:calc(env(safe-area-inset-bottom) + 8px);}
+    #dialog .box{padding:12px 14px 14px;}
+    #dialog .text{font-size:14px;line-height:1.5;}
+  }
 </style>
 </head>
 <body>
@@ -245,6 +265,16 @@
 const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
 const VW=180, VH=320;
 cvs.width=VW; cvs.height=VH; ctx.imageSmoothingEnabled=false;
+function updateAppHeight(){
+  const h=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--app-height',`${Math.max(320,Math.floor(h))}px`);
+}
+updateAppHeight();
+addEventListener('resize',updateAppHeight,{passive:true});
+if(window.visualViewport){
+  visualViewport.addEventListener('resize',updateAppHeight,{passive:true});
+  visualViewport.addEventListener('scroll',updateAppHeight,{passive:true});
+}
 
 // 歩けるエリアは画面とほぼ同じ高さに収める = 神社の眺めが常にフレーム内に入る
 // ワールド縦 360 / 画面 320 / カメラは僅かに追従(ほぼ固定)
@@ -876,7 +906,8 @@ const SANDO_ENTITIES=[
   {id:'obj_fox',type:'object',x:67,y:188,r:18,name:'狐像',act:'しらべる',
    lines:[{t:'凛とした狐の石像。稲荷の\n神さまのお使いやで。\n赤い前掛けがかわいい。',
      learn:'<b>豆知識：狐像</b>\n狐は神の使い「神使」。稲を食べるネズミを退治することから五穀豊穣の守りに。',spot:'fox'}]},
-  {id:'exit_romon',type:'exit',x:90,y:160,r:17,name:'楼門へ進む',act:'すすむ',to:'romon'}
+  {id:'exit_romon',type:'exit',x:90,y:160,r:17,name:'楼門へ進む',act:'すすむ',to:'romon',
+   spawn:{x:90,y:330,dir:'up'}}
 ];
 
 const ROMON_ENTITIES=[
@@ -897,8 +928,10 @@ const ROMON_ENTITIES=[
   {id:'npc_romon_cleaner',type:'npc',x:48,y:250,r:18,name:'境内を掃除している人',act:'はなす',spriteKey:'npc_shrine_cleaner',
    lines:[{t:'このあたりは静かに歩くと、\n風の音まで聞こえるんですよ。'},
      {t:'お参りのあとは、右手の方から\n千本鳥居へ進めます。\n足元に気をつけてくださいね。'}]},
-  {id:'to_senbon',type:'exit',x:156,y:236,r:24,name:'千本鳥居へ',act:'すすむ',to:'senbon'},
-  {id:'back_sando',type:'exit',x:90,y:356,r:24,name:'参道へ戻る',act:'もどる',to:'sando'}
+  {id:'to_senbon',type:'exit',x:156,y:236,r:24,name:'千本鳥居へ',act:'すすむ',to:'senbon',
+   spawn:{x:90,y:330,dir:'up'}},
+  {id:'back_sando',type:'exit',x:90,y:356,r:24,name:'参道へ戻る',act:'もどる',to:'sando',
+   spawn:{x:90,y:182,dir:'down'}}
 ];
 
 const SENBON_ENTITIES=[
@@ -907,8 +940,10 @@ const SENBON_ENTITIES=[
      learn:'<b>豆知識：千本鳥居</b>\n願いが「通る」よう、江戸時代から鳥居を奉納する習わしが広まったんやて。裏に奉納者の名前があるで。',spot:'senbon'}],visit:'senbon'},
   {id:'cat_senbon',type:'cat',x:120,y:292,r:18,sprite:{body:'#d8b048'},name:'千本鳥居のキジ白猫',act:'なでる',
    react:'……にゃ。\n(静かにこちらを見ている)',learn:'千本鳥居の道でひっそり佇む、細身のキジ白猫。'},
-  {id:'to_next',type:'exit',x:90,y:126,r:24,name:'鳥居の奥へ',act:'すすむ',to:'senbon'},
-  {id:'back_romon',type:'exit',x:90,y:356,r:24,name:'楼門・本殿前へ戻る',act:'もどる',to:'romon'}
+  {id:'to_next',type:'exit',x:90,y:126,r:24,name:'鳥居の奥へ',act:'すすむ',to:'senbon',
+   spawn:{x:90,y:330,dir:'up'}},
+  {id:'back_romon',type:'exit',x:90,y:356,r:24,name:'楼門・本殿前へ戻る',act:'もどる',to:'romon',
+   spawn:{x:146,y:244,dir:'down'}}
 ];
 
 const MAPS={
@@ -1062,8 +1097,12 @@ function showPage(){
   document.getElementById('dlg-text').textContent=pg.t;
   const L=document.getElementById('dlg-learn'),M=document.getElementById('dlg-more');
   L.classList.remove('show');L.innerHTML='';
-  if(pg.learn){M.style.display='inline-block';M.onclick=()=>{L.innerHTML=pg.learn;L.classList.add('show');M.style.display='none';};}
-  else M.style.display='none';
+  M.onclick=null;
+  if(pg.learn){
+    M.style.display='inline-block';
+    M.onpointerdown=e=>{e.preventDefault();e.stopPropagation();L.innerHTML=pg.learn;L.classList.add('show');M.style.display='none';};
+  }
+  else{M.style.display='none';M.onpointerdown=null;}
 }
 function advance(){
   const pg=dlg.lines[dlg.idx];
@@ -1092,12 +1131,13 @@ function doAction(){
   startDialog(e);
 }
 function goExit(e){
-  enterScene(e.to);
+  enterScene(e.to,true,e.spawn);
 }
-function enterScene(sceneId,showToast=true){
+function enterScene(sceneId,showToast=true,spawnOverride=null){
   const map=MAPS[sceneId];if(!map)return;
   SCENE=map.id;WORLD_H=map.worldH;
-  P.x=map.spawn.x;P.y=map.spawn.y;P.dir=map.spawn.dir;P.moving=false;
+  const spawn=spawnOverride||map.spawn;
+  P.x=spawn.x;P.y=spawn.y;P.dir=spawn.dir;P.moving=false;
   document.getElementById('area-label').textContent=map.areaLabel;
   setQuest(map.quest);
   ENTITIES=map.entities.map(o=>({...o}));
@@ -1196,14 +1236,21 @@ function renderEntries(el,items,empty){
 
 //============ 入力 ============
 const held={up:false,down:false,left:false,right:false};
+function suppressNativeTouch(id){
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+}
 function bindDir(id,dir){
   const el=document.getElementById(id);
-  const on=e=>{e.preventDefault();held[dir]=true;},off=e=>{e.preventDefault();held[dir]=false;};
+  const on=e=>{e.preventDefault();el.setPointerCapture?.(e.pointerId);held[dir]=true;};
+  const off=e=>{e.preventDefault();held[dir]=false;};
   el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);
-  el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);
+  el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);el.addEventListener('lostpointercapture',off);
 }
 bindDir('d-up','up');bindDir('d-down','down');bindDir('d-left','left');bindDir('d-right','right');
+suppressNativeTouch('controls');suppressNativeTouch('hud-actions');suppressNativeTouch('dialog');suppressNativeTouch('start-btn');
 document.getElementById('act-main').addEventListener('pointerdown',e=>{e.preventDefault();doAction();});
+document.getElementById('dialog').addEventListener('pointerdown',e=>{e.preventDefault();if(dlg.active)advance();});
 document.getElementById('book-btn').addEventListener('pointerdown',e=>{e.preventDefault();
   if(!document.getElementById('book').classList.contains('show'))openBook('cat');});
 document.getElementById('debug-btn').addEventListener('pointerdown',e=>{e.preventDefault();toggleDebug();});
@@ -1257,10 +1304,10 @@ function render(){
 
   if(game.nearest&&!dlg.active){
     const e=game.nearest,sy=e.y-camY,p=0.5+0.5*Math.sin(P.anim*0.15);
-    ctx.strokeStyle=`rgba(217,169,58,${0.4+0.4*p})`;ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.ellipse(e.x,sy+(e.type==='cat'?6:14),9,3.5,0,0,7);ctx.stroke();
-    // ぴょこっとした「!」マーク
-    const my=sy-(e.type==='object'?30:e.type==='exit'?16:22)-p*2;
+    const footY=sy+(e.type==='cat'?3:e.type==='npc'?7:e.type==='object'?4:0);
+    ctx.strokeStyle=`rgba(217,169,58,${0.28+0.32*p})`;ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.ellipse(e.x,footY,7.5,2.8,0,0,7);ctx.stroke();
+    const my=footY-(e.type==='cat'?25:e.type==='npc'?30:e.type==='object'?22:18)-p*2;
     R(e.x-1,my,2,4,'#d9a93a');R(e.x-1,my+5,2,2,'#d9a93a');
   }
   if(game.debug)drawDebug(camY);
