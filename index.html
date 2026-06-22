@@ -33,7 +33,7 @@
   #hud-left{flex:1;min-width:0;max-width:calc(100% - 132px);display:flex;flex-direction:column;gap:5px;}
   #hud-actions{display:flex;gap:6px;align-items:flex-start;flex:none;}
   #area-name{flex:1;display:flex;align-items:center;gap:7px;padding:7px 10px;
-    font-weight:700;font-size:clamp(12px,3.5vw,16px);line-height:1.25;letter-spacing:.04em;}
+    font-weight:700;font-size:clamp(12px,3.5vw,16px);line-height:1.25;letter-spacing:.04em;pointer-events:auto;}
   #area-name .torii{width:18px;height:16px;flex:none;}
   #cat-count{padding:7px 9px;font-weight:700;font-size:clamp(12px,3.6vw,16px);
     display:flex;align-items:center;gap:5px;white-space:nowrap;}
@@ -46,6 +46,7 @@
   #debug-btn{width:clamp(36px,9vw,44px);height:clamp(28px,8vw,36px);padding:3px;
     display:flex;align-items:center;justify-content:center;
     pointer-events:auto;cursor:pointer;flex:none;font-size:10px;font-weight:700;letter-spacing:.03em;}
+  #debug-btn.hidden{display:none;}
   #debug-btn.active{background:linear-gradient(180deg,#2f3b2f,#1b241b);color:#92ff92;border-color:#5eda5e;}
   #debug-btn:active{transform:translateY(1px);}
   #quest-bar{padding:6px 10px;font-size:clamp(10px,3vw,13px);line-height:1.38;color:var(--ink);
@@ -214,7 +215,7 @@
     <div id="hud-actions">
       <div class="panel" id="cat-count">🐾 <span id="cat-n">0</span>/<span id="cat-total">0</span></div>
       <div class="panel" id="book-btn"><span class="ico">📒</span><span class="lbl">帳面</span></div>
-      <div class="panel" id="debug-btn">DBG</div>
+      <div class="panel hidden" id="debug-btn">DBG</div>
     </div>
   </div>
 
@@ -329,7 +330,7 @@
       <rect x="16" y="20" width="15" height="4" fill="#8a2818"/>
       <rect x="69" y="20" width="15" height="4" fill="#8a2818"/>
     </svg>
-    <h1>京都クエスト</h1>
+    <h1 id="title-name">京都クエスト</h1>
     <div class="sub">ふしみいなり</div>
     <div class="start" id="start-btn">はじめる</div>
     <div class="hint">十字キーで移動・まるボタンで調べる/話す/なでる<br>近づくとボタンが反応するで</div>
@@ -362,9 +363,10 @@ function floorTop(){ return MAPS[SCENE].walkable.top; }
 function floorBot(){ return MAPS[SCENE].walkable.bottom; }
 
 let P={x:90,y:300,dir:'up',moving:false,anim:0,speed:1.1};
-let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null,debug:false};
+let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りしよう',nearest:null,debug:false,debugEnabled:false};
 let PLAYER_COLLISION_R=0;
 let debugEditor={selected:0,entitySelected:0,dragging:false,dragOffsetX:0,dragOffsetY:0,minimized:false};
+const DEBUG_STORAGE_KEY='kyotoQuestDebugEnabled';
 
 function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
@@ -996,7 +998,7 @@ const ROMON_ENTITIES=[
   {id:'honden',type:'object',x:90,y:136,r:42,name:'本殿',act:'お参り',
    lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
      learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
-  {id:'temizu',type:'object',x:154,y:178,r:22,name:'手水舎',act:'しらべる',
+  {id:'temizu',type:'object',x:154,y:182,r:22,name:'手水舎',act:'しらべる',
    lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
      learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
   {id:'fox_left',type:'object',x:56,y:158,r:24,name:'左の狐像',act:'しらべる',
@@ -1058,6 +1060,7 @@ const MAPS={
     worldH:380,
     spawn:{x:90,y:330,dir:'up'},
     walkable:{left:32,right:164,top:142,bottom:364},
+    playerCollisionRadius:0,
     blockers:[
       {x:42,y:189,halfW:20,halfH:32},
       {x:49,y:148,halfW:15,halfH:14},
@@ -1079,7 +1082,11 @@ const MAPS={
     worldH:380,
     spawn:{x:90,y:330,dir:'up'},
     walkable:{left:52,right:118,top:128,bottom:366},
-    blockers:[],
+    playerCollisionRadius:0,
+    blockers:[
+      {x:54,y:174,halfW:10,halfH:45.5},
+      {x:66,y:145,halfW:8,halfH:28.5}
+    ],
     entities:SENBON_ENTITIES,
     backgroundType:'code',
     backgroundImage:'assets/bg/senbon.png',
@@ -1222,6 +1229,7 @@ function enterScene(sceneId,showToast=true,spawnOverride=null){
   SCENE=map.id;WORLD_H=map.worldH;
   const spawn=spawnOverride||map.spawn;
   P.x=spawn.x;P.y=spawn.y;P.dir=spawn.dir;P.moving=false;
+  PLAYER_COLLISION_R=map.playerCollisionRadius??0;
   document.getElementById('area-label').textContent=map.areaLabel;
   setQuest(map.quest);
   ENTITIES=map.entities.map(o=>({...o}));
@@ -1249,7 +1257,46 @@ function toast(ico,title,sub){
 }
 
 //============ デバッグ表示 ============
+// 開発用の隠しデバッグ入口。通常URLではDBG UIを出さない。
+function debugStorageSet(enabled){
+  try{
+    if(enabled)localStorage.setItem(DEBUG_STORAGE_KEY,'1');
+    else localStorage.removeItem(DEBUG_STORAGE_KEY);
+  }catch(_){}
+}
+function debugStorageGet(){
+  try{return localStorage.getItem(DEBUG_STORAGE_KEY)==='1';}
+  catch(_){return false;}
+}
+function applyDebugEnabled(enabled,notify=false){
+  game.debugEnabled=!!enabled;
+  if(!game.debugEnabled)game.debug=false;
+  const btn=document.getElementById('debug-btn');
+  btn.classList.toggle('hidden',!game.debugEnabled);
+  btn.classList.toggle('active',game.debugEnabled&&game.debug);
+  updateDebugEditor();
+  if(notify)toast(game.debugEnabled?'🛠️':'✅',game.debugEnabled?'DBG enabled':'DBG disabled','');
+}
+function initDebugAccess(){
+  const params=new URLSearchParams(location.search);
+  if(params.get('debug')==='1'){debugStorageSet(true);applyDebugEnabled(true);return;}
+  if(params.get('debug')==='0'){debugStorageSet(false);applyDebugEnabled(false);return;}
+  applyDebugEnabled(debugStorageGet());
+}
+function bindDebugSecretTap(el){
+  let taps=[];
+  el.addEventListener('pointerdown',e=>{
+    const now=Date.now();
+    taps=taps.filter(t=>now-t<2000);taps.push(now);
+    if(taps.length>=5){
+      e.preventDefault();taps=[];
+      const next=!game.debugEnabled;
+      debugStorageSet(next);applyDebugEnabled(next,true);
+    }
+  });
+}
 function toggleDebug(){
+  if(!game.debugEnabled){game.debug=false;updateDebugEditor();return;}
   game.debug=!game.debug;
   document.getElementById('debug-btn').classList.toggle('active',game.debug);
   updateDebugEditor();
@@ -1260,15 +1307,15 @@ function debugConfigText(){
     scene:SCENE,
     walkable:map.walkable,
     blockers:map.blockers,
-    playerCollisionRadius:PLAYER_COLLISION_R,
+    playerCollisionRadius:map.playerCollisionRadius??PLAYER_COLLISION_R,
     entities:ENTITIES.map(e=>({id:e.id,type:e.type,x:e.x,y:e.y,r:e.r}))
   },null,2);
 }
 function updateDebugEditor(){
   const editor=document.getElementById('debug-editor');
-  editor.classList.toggle('show',game.debug);
+  editor.classList.toggle('show',game.debugEnabled&&game.debug);
   editor.classList.toggle('minimized',debugEditor.minimized);
-  if(!game.debug)return;
+  if(!game.debugEnabled||!game.debug)return;
   const map=MAPS[SCENE],sel=document.getElementById('dbg-blocker-select'),entSel=document.getElementById('dbg-entity-select');
   const count=map.blockers.length;
   debugEditor.selected=Math.max(0,Math.min(debugEditor.selected,count-1));
@@ -1355,6 +1402,7 @@ function nudgeBlockerSize(which,step){
 function applyPlayerCollisionInput(){
   const el=document.getElementById('dbg-player-r');
   PLAYER_COLLISION_R=Math.max(0,Math.round(Number(el.value)||0));
+  MAPS[SCENE].playerCollisionRadius=PLAYER_COLLISION_R;
   updateDebugEditor();
 }
 function nudgePlayerCollision(step){
@@ -1598,7 +1646,7 @@ addEventListener('keydown',e=>{
   if(e.key==='z'||e.key==='Z'||e.key==='Enter'||e.key===' '){e.preventDefault();doAction();}
   if(e.key==='b'||e.key==='B'){const b=document.getElementById('book');
     if(b.classList.contains('show'))b.classList.remove('show');else openBook('cat');}
-  if((e.key==='d'||e.key==='D')&&!e.repeat){toggleDebug();}
+  if((e.key==='d'||e.key==='D')&&!e.repeat&&game.debugEnabled){toggleDebug();}
 });
 addEventListener('keyup',e=>{
   if(e.key==='ArrowUp')held.up=false;if(e.key==='ArrowDown')held.down=false;
@@ -1607,6 +1655,9 @@ addEventListener('keyup',e=>{
 document.getElementById('start-btn').addEventListener('pointerdown',e=>{
   e.preventDefault();document.getElementById('title').classList.add('hide');game.started=true;
 });
+bindDebugSecretTap(document.getElementById('area-name'));
+bindDebugSecretTap(document.getElementById('title-name'));
+initDebugAccess();
 
 //============ 更新・描画ループ ============
 function updatePlayer(){
@@ -1645,7 +1696,7 @@ function render(){
     const my=footY-(e.type==='cat'?25:e.type==='npc'?30:e.type==='object'?22:18)-p*2;
     R(e.x-1,my,2,4,'#d9a93a');R(e.x-1,my+5,2,2,'#d9a93a');
   }
-  if(game.debug)drawDebug(camY);
+  if(game.debugEnabled&&game.debug)drawDebug(camY);
 }
 function loop(){if(game.started){updatePlayer();updateNearest();}render();requestAnimationFrame(loop);}
 loadPlayerIdleSprite();
