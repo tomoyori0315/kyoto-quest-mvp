@@ -34,6 +34,10 @@
   #hud-actions{display:flex;gap:6px;align-items:flex-start;flex:none;}
   #area-name{flex:1;display:flex;align-items:center;gap:7px;padding:7px 10px;
     font-weight:700;font-size:clamp(12px,3.5vw,16px);line-height:1.25;letter-spacing:.04em;pointer-events:auto;}
+  #area-name,#title-name{
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;cursor:default;
+  }
   #area-name .torii{width:18px;height:16px;flex:none;}
   #cat-count{padding:7px 9px;font-weight:700;font-size:clamp(12px,3.6vw,16px);
     display:flex;align-items:center;gap:5px;white-space:nowrap;}
@@ -367,6 +371,7 @@ let game={started:false,cats:{},spots:{},visits:{},quest:'楼門にお参りし�
 let PLAYER_COLLISION_R=0;
 let debugEditor={selected:0,entitySelected:0,dragging:false,dragOffsetX:0,dragOffsetY:0,minimized:false};
 const DEBUG_STORAGE_KEY='kyotoQuestDebugEnabled';
+const IS_IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 
 function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
@@ -467,7 +472,7 @@ const CAT_SPRITES={
 const NPC_SPRITES={
   guide:{
     src:'assets/sprites/npcs/npc-guide-oldman-sheet.png',
-    img:new Image(),ready:false,cols:3,cellW:724,cellH:724,drawH:26,phase:800,
+    img:new Image(),ready:false,cols:3,cellW:724,cellH:724,drawH:26,phase:800,iosFlipYFix:true,
     frameOffsets:{
       poseA:{x:-3,y:3},
       poseB:{x:1,y:3},
@@ -618,7 +623,20 @@ function makeNpcSpriteFrame(img,cfg,col){
   c.width=cfg.cellW;c.height=cfg.cellH;
   g.drawImage(img,col*cfg.cellW,0,cfg.cellW,cfg.cellH,0,0,c.width,c.height);
   transparentCreamBackground(c,g);
+  if(cfg.iosFlipYFix&&IS_IOS)flipCanvasPixelsY(c,g);
   return c;
+}
+function flipCanvasPixelsY(c,g){
+  try{
+    const src=g.getImageData(0,0,c.width,c.height);
+    const dst=g.createImageData(c.width,c.height);
+    const row=c.width*4;
+    for(let y=0;y<c.height;y++){
+      const from=y*row,to=(c.height-1-y)*row;
+      dst.data.set(src.data.subarray(from,from+row),to);
+    }
+    g.putImageData(dst,0,0);
+  }catch(_){}
 }
 function transparentCreamBackground(c,g){
   try{
@@ -1285,15 +1303,18 @@ function initDebugAccess(){
 }
 function bindDebugSecretTap(el){
   let taps=[];
-  el.addEventListener('pointerdown',e=>{
+  const onTap=e=>{
+    e.preventDefault();e.stopPropagation();
     const now=Date.now();
     taps=taps.filter(t=>now-t<2000);taps.push(now);
     if(taps.length>=5){
-      e.preventDefault();taps=[];
+      taps=[];
       const next=!game.debugEnabled;
       debugStorageSet(next);applyDebugEnabled(next,true);
     }
-  });
+  };
+  if('ontouchstart' in window)el.addEventListener('touchstart',onTap,{passive:false});
+  else el.addEventListener('pointerdown',onTap);
 }
 function toggleDebug(){
   if(!game.debugEnabled){game.debug=false;updateDebugEditor();return;}
