@@ -11,6 +11,7 @@
     --washi:#f0e6cf; --washi-d:#e0d2b0;
     --ink:#2a2018; --gold:#d9a93a; --ui-line:#caa35f;
     --app-height:100vh; --dpad-size:132px; --dpad-cell:44px;
+    --dpad-idle-opacity:.56; --dpad-active-opacity:.92;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
   html,body{height:100%;overflow:hidden;background:#1a140e;}
@@ -61,17 +62,29 @@
   #controls{position:absolute;left:0;right:0;bottom:0;
     padding:0 10px calc(env(safe-area-inset-bottom) + 12px);
     display:flex;justify-content:space-between;align-items:flex-end;z-index:20;pointer-events:none;}
-  #dpad{position:relative;width:var(--dpad-size);height:var(--dpad-size);pointer-events:auto;flex:none;touch-action:none;}
+  #dpad{position:relative;width:var(--dpad-size);height:var(--dpad-size);pointer-events:auto;flex:none;touch-action:none;
+    opacity:var(--dpad-idle-opacity);transition:opacity .12s ease,filter .12s ease;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22));}
+  #dpad.stick-hidden{display:none;}
+  #dpad.is-active{opacity:var(--dpad-active-opacity);filter:drop-shadow(0 3px 7px rgba(0,0,0,.36));}
   .dbtn{position:absolute;width:var(--dpad-cell);height:var(--dpad-cell);background:linear-gradient(180deg,#f3ead4,#dcc9a4);
     border:2px solid var(--ui-line);color:var(--wood-d);display:flex;align-items:center;justify-content:center;
-    font-size:18px;box-shadow:0 2px 0 rgba(90,52,24,.5);}
-  .dbtn:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(90,52,24,.5);}
+    font-size:18px;box-shadow:0 2px 0 rgba(90,52,24,.5);backdrop-filter:blur(2px);}
+  .dbtn:active,.dbtn.is-pressed{transform:translateY(1px);box-shadow:0 1px 0 rgba(90,52,24,.5);
+    background:linear-gradient(180deg,#fff4d4,#d9a93a);border-color:#e0b24a;color:#5a3418;}
   #d-up{top:0;left:var(--dpad-cell);border-radius:10px 10px 4px 4px;}
   #d-down{bottom:0;left:var(--dpad-cell);border-radius:4px 4px 10px 10px;}
   #d-left{top:var(--dpad-cell);left:0;border-radius:10px 4px 4px 10px;}
   #d-right{top:var(--dpad-cell);right:0;border-radius:4px 10px 10px 4px;}
   #d-center{top:var(--dpad-cell);left:var(--dpad-cell);width:var(--dpad-cell);height:var(--dpad-cell);
     background:radial-gradient(circle,#e8d8b4,#cdb888);border:2px solid var(--ui-line);}
+  #virtual-stick{position:absolute;left:0;top:0;width:112px;height:112px;z-index:21;display:none;pointer-events:none;
+    transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 3px 8px rgba(0,0,0,.36));}
+  #virtual-stick.show{display:block;}
+  #stick-base{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(202,163,95,.75);
+    background:rgba(240,230,207,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(2px);}
+  #stick-knob{position:absolute;left:50%;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%,-50%);
+    border:2px solid rgba(202,163,95,.9);background:linear-gradient(180deg,rgba(243,234,212,.9),rgba(216,195,156,.86));
+    box-shadow:0 2px 0 rgba(90,52,24,.45);}
   #act-cluster{display:flex;gap:9px;align-items:flex-end;pointer-events:auto;padding-bottom:6px;}
   .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
   .act .circle{width:clamp(48px,13vw,58px);height:clamp(48px,13vw,58px);border-radius:50%;
@@ -255,6 +268,10 @@
       <div class="dbtn" id="d-right">▶</div>
       <div class="dbtn" id="d-down">▼</div>
     </div>
+    <div id="virtual-stick">
+      <div id="stick-base"></div>
+      <div id="stick-knob"></div>
+    </div>
     <div id="act-cluster">
       <div class="act primary disabled" id="act-main">
         <div class="circle" id="act-icon">🔍</div>
@@ -372,6 +389,7 @@ let PLAYER_COLLISION_R=0;
 let debugEditor={selected:0,entitySelected:0,dragging:false,dragOffsetX:0,dragOffsetY:0,minimized:false};
 const DEBUG_STORAGE_KEY='kyotoQuestDebugEnabled';
 const IS_IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const STICK_ENABLED=new URLSearchParams(location.search).get('stick')==='1';
 
 function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
@@ -974,7 +992,7 @@ function drawCatSprite(c,cfg,sx,sy){
 //============ エンティティ ============
 let ENTITIES=[];
 const SANDO_ENTITIES=[
-  {id:'guide',type:'npc',x:94,y:306,r:18,
+  {id:'guide',type:'npc',x:102,y:306,r:18,
    sprite:{color:'#3a6ea5',color2:'#2a5a90',pants:'#2a3038'},name:'案内のおじさん',act:'はなす',
    lines:[{t:'ようおまいり！\nここが伏見稲荷の大鳥居やで。\nでかいやろ〜。'},
      {t:'鳥居をくぐる時はな、端を通って\n軽く一礼。真ん中は神さまの\n通り道やで。',
@@ -995,7 +1013,7 @@ const SANDO_ENTITIES=[
      {t:'(身ぶり手ぶりで楼門の方を\n 指している)\nThank you! 行ってきます！'}]},
   {id:'cat_torii',type:'cat',x:76,y:218,r:15,sprite:{body:'#d89048',calico:true},name:'気まぐれ猫',act:'なでる',
    react:'…ゴロゴロ。\n(撫でられて満足そう)',learn:'鳥居の根元がお気に入りの昼寝スポットらしい。'},
-  {id:'cat_shop',type:'cat',x:68,y:324,r:15,sprite:{body:'#5a5a5a'},name:'人懐っこい猫',act:'なでる',
+  {id:'cat_shop',type:'cat',x:64,y:334,r:15,sprite:{body:'#5a5a5a'},name:'人懐っこい猫',act:'なでる',
    react:'にゃ〜ん♪\n(すり寄ってきた)',learn:'茶屋の前に住む看板猫。撫でられるのが大好き。'},
   {id:'cat_lantern',type:'cat',x:126,y:288,r:15,sprite:{body:'#e8d088'},name:'落ち着いた猫',act:'なでる',
    react:'(目を細めて\n のんびりしている)',learn:'灯籠の陰で日向ぼっこするマイペースな猫。'},
@@ -1016,7 +1034,7 @@ const ROMON_ENTITIES=[
   {id:'honden',type:'object',x:90,y:136,r:42,name:'本殿',act:'お参り',
    lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
      learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
-  {id:'temizu',type:'object',x:154,y:182,r:22,name:'手水舎',act:'しらべる',
+  {id:'temizu',type:'object',x:47,y:205,r:23,name:'手水舎',act:'しらべる',
    lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
      learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
   {id:'fox_left',type:'object',x:56,y:158,r:24,name:'左の狐像',act:'しらべる',
@@ -1025,12 +1043,12 @@ const ROMON_ENTITIES=[
   {id:'fox_right',type:'object',x:124,y:158,r:24,name:'右の狐像',act:'しらべる',
    lines:[{t:'本殿前の右側にも狐像がある。\n左右で対になって、参拝する人を\n見守っているみたいや。',
      learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
-  {id:'cat_honden',type:'cat',x:58,y:296,r:18,sprite:{body:'#f4f1e8'},name:'本殿のはちわれ猫',act:'なでる',
+  {id:'cat_honden',type:'cat',x:134,y:301,r:18,sprite:{body:'#f4f1e8'},name:'本殿のはちわれ猫',act:'なでる',
    react:'……にゃ。\n(静かに目を細めている)',learn:'本殿前で参拝客を見守る、落ち着いた白黒はちわれ猫。'},
-  {id:'npc_romon_cleaner',type:'npc',x:48,y:250,r:18,name:'境内を掃除している人',act:'はなす',spriteKey:'npc_shrine_cleaner',
+  {id:'npc_romon_cleaner',type:'npc',x:48,y:260,r:18,name:'境内を掃除している人',act:'はなす',spriteKey:'npc_shrine_cleaner',
    lines:[{t:'このあたりは静かに歩くと、\n風の音まで聞こえるんですよ。'},
      {t:'お参りのあとは、右手の方から\n千本鳥居へ進めます。\n足元に気をつけてくださいね。'}]},
-  {id:'to_senbon',type:'exit',x:156,y:236,r:24,name:'千本鳥居へ',act:'すすむ',to:'senbon',
+  {id:'to_senbon',type:'exit',x:156,y:204,r:24,name:'千本鳥居へ',act:'すすむ',to:'senbon',
    spawn:{x:90,y:330,dir:'up'}},
   {id:'back_sando',type:'exit',x:90,y:356,r:24,name:'参道へ戻る',act:'もどる',to:'sando',
    spawn:{x:90,y:182,dir:'down'}}
@@ -1056,6 +1074,7 @@ const MAPS={
     worldH:380,
     spawn:{x:90,y:336,dir:'up'},
     walkable:{left:45,right:140,top:154,bottom:374},
+    playerCollisionRadius:0,
     blockers:[
       {x:60,y:161,halfW:8.5,halfH:34},
       {x:123,y:159,halfW:14.5,halfH:34},
@@ -1080,13 +1099,14 @@ const MAPS={
     walkable:{left:32,right:164,top:142,bottom:364},
     playerCollisionRadius:0,
     blockers:[
-      {x:42,y:189,halfW:20,halfH:32},
+      {x:44,y:188,halfW:19.5,halfH:21.5},
       {x:49,y:148,halfW:15,halfH:14},
       {x:137,y:154,halfW:17,halfH:15.5},
-      {x:142,y:180,halfW:23.5,halfH:15.5},
+      {x:141,y:183,halfW:23.5,halfH:15.5},
       {x:30,y:326,halfW:12,halfH:42},
       {x:155,y:332,halfW:8.5,halfH:33.5},
-      {x:164,y:239,halfW:14,halfH:26.5}
+      {x:164,y:239,halfW:14,halfH:26.5},
+      {x:35,y:214,halfW:10.5,halfH:12}
     ],
     entities:ROMON_ENTITIES,
     backgroundType:'code',
@@ -1164,7 +1184,24 @@ const VISIT_META={
 };
 
 //============ 当たり判定 ============
-function canWalk(x,y){
+const NPC_SOLID_BOX={halfW:5,halfH:4,offsetX:0,offsetY:0};
+const CAT_SOLID_BOX={halfW:4,halfH:3,offsetX:0,offsetY:0};
+function getEntitySolidBox(e){
+  if(!e||e.solid===false)return null;
+  if(e.solidBox)return {...e.solidBox};
+  if(Number.isFinite(e.solidW)||Number.isFinite(e.solidH)){
+    return {
+      halfW:Math.max(0,Number(e.solidW)||0)/2,
+      halfH:Math.max(0,Number(e.solidH)||0)/2,
+      offsetX:Number(e.solidOffsetX)||0,
+      offsetY:Number(e.solidOffsetY)||0
+    };
+  }
+  if(e.type==='npc')return {...NPC_SOLID_BOX};
+  if(e.type==='cat')return {...CAT_SOLID_BOX};
+  return null;
+}
+function canWalkHard(x,y){
   const map=MAPS[SCENE],w=map.walkable;
   const r=PLAYER_COLLISION_R;
   if(x-r<w.left||x+r>w.right)return false;
@@ -1173,6 +1210,21 @@ function canWalk(x,y){
     if(Math.abs(x-b.x)<b.halfW+r&&Math.abs(y-b.y)<b.halfH+r)return false;
   }
   return true;
+}
+function isBlockedByEntitySolid(nextX,nextY,currentX=null,currentY=null){
+  const r=PLAYER_COLLISION_R;
+  for(const e of ENTITIES){
+    const box=getEntitySolidBox(e);
+    if(!box)continue;
+    // 4方向RPG向けに、NPC/catは足元の小さい矩形だけを止める。
+    const cx=e.x+(box.offsetX||0),cy=e.y+(box.offsetY||0);
+    if(Math.abs(nextX-cx)<box.halfW+r&&Math.abs(nextY-cy)<box.halfH+r)return true;
+  }
+  return false;
+}
+function canWalk(x,y,currentX=null,currentY=null){
+  if(!canWalkHard(x,y))return false;
+  return !isBlockedByEntitySolid(x,y,currentX,currentY);
 }
 
 //============ 近接判定 ============
@@ -1529,6 +1581,16 @@ function drawDebug(camY){
     ctx.fillStyle=col.fill;
     ctx.lineWidth=selected?2:1;
     ctx.beginPath();ctx.arc(e.x,sy,e.r,0,7);ctx.fill();ctx.stroke();
+    const solidBox=getEntitySolidBox(e);
+    if(solidBox){
+      const bx=e.x+(solidBox.offsetX||0)-solidBox.halfW;
+      const by=sy+(solidBox.offsetY||0)-solidBox.halfH;
+      ctx.strokeStyle='rgba(120,245,255,.95)';
+      ctx.fillStyle='rgba(120,245,255,.08)';
+      ctx.lineWidth=selected?1.5:1;
+      ctx.fillRect(bx,by,solidBox.halfW*2,solidBox.halfH*2);
+      ctx.strokeRect(bx+.5,by+.5,solidBox.halfW*2,solidBox.halfH*2);
+    }
     R(e.x-1,sy-1,3,3,selected?'#fff4a0':'#ffffff');
     debugLabel(e.id||e.name,e.x+3,sy-e.r-8);
   }
@@ -1575,19 +1637,75 @@ function renderEntries(el,items,empty){
 
 //============ 入力 ============
 const held={up:false,down:false,left:false,right:false};
+function syncDpadVisual(){
+  const dpad=document.getElementById('dpad');
+  dpad.classList.toggle('is-active',held.up||held.down||held.left||held.right);
+  for(const dir of ['up','down','left','right']){
+    document.getElementById('d-'+dir).classList.toggle('is-pressed',held[dir]);
+  }
+}
 function suppressNativeTouch(id){
   const el=document.getElementById(id);
   el.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
 }
 function bindDir(id,dir){
   const el=document.getElementById(id);
-  const on=e=>{e.preventDefault();el.setPointerCapture?.(e.pointerId);held[dir]=true;};
-  const off=e=>{e.preventDefault();held[dir]=false;};
+  const on=e=>{e.preventDefault();el.setPointerCapture?.(e.pointerId);held[dir]=true;syncDpadVisual();};
+  const off=e=>{e.preventDefault();held[dir]=false;syncDpadVisual();};
   el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);
   el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);el.addEventListener('lostpointercapture',off);
 }
 bindDir('d-up','up');bindDir('d-down','down');bindDir('d-left','left');bindDir('d-right','right');
 suppressNativeTouch('controls');suppressNativeTouch('hud-actions');suppressNativeTouch('dialog');suppressNativeTouch('start-btn');
+const stickState={active:false,pointerId:null,cx:0,cy:0,dir:null,max:36,dead:10};
+function setStickDirection(dir){
+  for(const d of ['up','down','left','right'])held[d]=d===dir;
+  stickState.dir=dir;syncDpadVisual();
+}
+function resetVirtualStick(){
+  if(stickState.dir)for(const d of ['up','down','left','right'])held[d]=false;
+  stickState.active=false;stickState.pointerId=null;stickState.dir=null;
+  document.getElementById('virtual-stick').classList.remove('show');
+  document.getElementById('stick-knob').style.transform='translate(-50%,-50%)';
+  syncDpadVisual();
+}
+function updateVirtualStickDirection(dx,dy){
+  const dist=Math.hypot(dx,dy),knob=document.getElementById('stick-knob');
+  const k=dist>stickState.max?stickState.max/dist:1;
+  knob.style.transform=`translate(calc(-50% + ${dx*k}px), calc(-50% + ${dy*k}px))`;
+  if(dist<stickState.dead){setStickDirection(null);return;}
+  if(Math.abs(dx)>Math.abs(dy))setStickDirection(dx<0?'left':'right');
+  else setStickDirection(dy<0?'up':'down');
+}
+function canStartVirtualStick(e){
+  if(!STICK_ENABLED||stickState.active||!game.started)return false;
+  if(e.target.closest('#act-cluster,#hud-top,#dialog,#book,#debug-editor,#title'))return false;
+  const wrap=document.getElementById('wrap'),r=wrap.getBoundingClientRect();
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  return x<r.width*.58&&y>r.height*.48;
+}
+function bindVirtualStick(){
+  document.getElementById('dpad').classList.toggle('stick-hidden',STICK_ENABLED);
+  if(!STICK_ENABLED)return;
+  const wrap=document.getElementById('wrap'),stick=document.getElementById('virtual-stick');
+  wrap.addEventListener('pointerdown',e=>{
+    if(!canStartVirtualStick(e))return;
+    e.preventDefault();e.stopPropagation();
+    stickState.active=true;stickState.pointerId=e.pointerId;stickState.cx=e.clientX;stickState.cy=e.clientY;
+    stick.style.left=`${e.clientX-wrap.getBoundingClientRect().left}px`;
+    stick.style.top=`${e.clientY-wrap.getBoundingClientRect().top}px`;
+    stick.classList.add('show');wrap.setPointerCapture?.(e.pointerId);
+    updateVirtualStickDirection(0,0);
+  },true);
+  wrap.addEventListener('pointermove',e=>{
+    if(!stickState.active||e.pointerId!==stickState.pointerId)return;
+    e.preventDefault();updateVirtualStickDirection(e.clientX-stickState.cx,e.clientY-stickState.cy);
+  });
+  for(const ev of ['pointerup','pointercancel','pointerleave','lostpointercapture']){
+    wrap.addEventListener(ev,e=>{if(stickState.active&&e.pointerId===stickState.pointerId)resetVirtualStick();});
+  }
+}
+bindVirtualStick();
 document.getElementById('dbg-blocker-select').addEventListener('change',e=>{debugEditor.selected=Number(e.target.value)||0;updateDebugEditor();});
 document.getElementById('dbg-entity-select').addEventListener('change',e=>{debugEditor.entitySelected=Number(e.target.value)||0;updateDebugEditor();});
 for(const id of ['dbg-bx','dbg-by','dbg-bw','dbg-bh']){
@@ -1664,6 +1782,7 @@ document.querySelectorAll('#book .tab').forEach(t=>t.addEventListener('pointerdo
 addEventListener('keydown',e=>{
   if(e.key==='ArrowUp')held.up=true;if(e.key==='ArrowDown')held.down=true;
   if(e.key==='ArrowLeft')held.left=true;if(e.key==='ArrowRight')held.right=true;
+  if(e.key.startsWith('Arrow'))syncDpadVisual();
   if(e.key==='z'||e.key==='Z'||e.key==='Enter'||e.key===' '){e.preventDefault();doAction();}
   if(e.key==='b'||e.key==='B'){const b=document.getElementById('book');
     if(b.classList.contains('show'))b.classList.remove('show');else openBook('cat');}
@@ -1672,6 +1791,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{
   if(e.key==='ArrowUp')held.up=false;if(e.key==='ArrowDown')held.down=false;
   if(e.key==='ArrowLeft')held.left=false;if(e.key==='ArrowRight')held.right=false;
+  if(e.key.startsWith('Arrow'))syncDpadVisual();
 });
 document.getElementById('start-btn').addEventListener('pointerdown',e=>{
   e.preventDefault();document.getElementById('title').classList.add('hide');game.started=true;
@@ -1687,8 +1807,10 @@ function updatePlayer(){
   if(held.up){dy=-1;P.dir='up';}else if(held.down){dy=1;P.dir='down';}
   else if(held.left){dx=-1;P.dir='left';}else if(held.right){dx=1;P.dir='right';}
   if(dx||dy){
-    const nx=P.x+dx*P.speed,ny=P.y+dy*P.speed;let moved=false;
-    if(canWalk(nx,P.y)){P.x=nx;moved=true;}if(canWalk(P.x,ny)){P.y=ny;moved=true;}
+    let moved=false;
+    const nx=P.x+dx*P.speed,ny=P.y+dy*P.speed;
+    if(canWalk(nx,P.y,P.x,P.y)){P.x=nx;moved=true;}
+    if(canWalk(P.x,ny,P.x,P.y)){P.y=ny;moved=true;}
     P.moving=moved;P.anim++;
   }else P.moving=false;
 }
