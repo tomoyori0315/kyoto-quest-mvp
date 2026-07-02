@@ -405,7 +405,9 @@ let PLAYER_COLLISION_R=0;
 let debugEditor={selected:0,entitySelected:0,dragging:false,dragOffsetX:0,dragOffsetY:0,minimized:false};
 const DEBUG_STORAGE_KEY='kyotoQuestDebugEnabled';
 const IS_IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-const STICK_ENABLED=new URLSearchParams(location.search).get('stick')==='1';
+const URL_PARAMS=new URLSearchParams(location.search);
+const DPAD_MODE=URL_PARAMS.get('dpad')==='1';
+const STICK_ENABLED=!DPAD_MODE;
 
 function R(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);}
 function circ(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
@@ -1396,9 +1398,8 @@ function applyDebugEnabled(enabled,notify=false){
   if(notify)toast(game.debugEnabled?'🛠️':'✅',game.debugEnabled?'DBG enabled':'DBG disabled','');
 }
 function initDebugAccess(){
-  const params=new URLSearchParams(location.search);
-  if(params.get('debug')==='1'){debugStorageSet(true);applyDebugEnabled(true);return;}
-  if(params.get('debug')==='0'){debugStorageSet(false);applyDebugEnabled(false);return;}
+  if(URL_PARAMS.get('debug')==='1'){debugStorageSet(true);applyDebugEnabled(true);return;}
+  if(URL_PARAMS.get('debug')==='0'){debugStorageSet(false);applyDebugEnabled(false);return;}
   applyDebugEnabled(debugStorageGet());
 }
 function bindDebugSecretTap(el){
