@@ -131,6 +131,15 @@
     border-left:3px solid var(--gold);border-radius:5px;font-size:13px;line-height:1.55;color:#5a4418;display:none;}
   #dialog .learn.show{display:block;}
   #dialog .learn b{color:var(--vermillion-d);}
+  #dialog .learn.card-show{display:block;border:1px solid rgba(202,163,95,.75);border-left:4px solid var(--vermillion);
+    background:rgba(255,248,230,.78);padding:9px 10px 10px;}
+  #dialog .learn-card{display:grid;gap:5px;}
+  #dialog .learn-card .card-title{font-weight:800;color:var(--vermillion-d);font-size:14px;}
+  #dialog .learn-card .card-lead{font-weight:700;color:#5a3418;font-size:12px;}
+  #dialog .learn-card .card-body{color:#4b3920;font-size:12.5px;line-height:1.55;}
+  #dialog .learn-card .card-tip{margin-top:2px;padding-top:6px;border-top:1px dashed rgba(138,40,24,.28);
+    color:#6a4c1f;font-size:12px;line-height:1.45;}
+  #dialog .learn-card .card-tip b{color:var(--vermillion-d);}
 
   #book{position:absolute;inset:0;z-index:40;display:none;background:rgba(20,14,8,.7);
     backdrop-filter:blur(2px);padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 28px);}
@@ -1026,13 +1035,19 @@ const SANDO_ENTITIES=[
    react:'(目を細めて\n のんびりしている)',learn:'灯籠の陰で日向ぼっこするマイペースな猫。'},
   {id:'obj_torii',type:'object',x:90,y:203,r:23,name:'大鳥居',act:'しらべる',
    lines:[{t:'見上げるほど大きな朱色の鳥居。\nくぐると、いよいよ神さまの\n領域や。',
-     learn:'<b>大鳥居</b>\n朱色は魔除けと生命力の象徴。連なる朱の鳥居が伏見稲荷の名物やね。',spot:'big_torii'}]},
+     card:{title:'大鳥居',lead:'ここから伏見稲荷の参道がはじまる。',
+      body:'鳥居は、神さまのいる場所と人の世界を分ける入口のようなものです。伏見稲荷では、朱色の鳥居が参道を彩り、訪れる人を神域へと導いてくれます。',
+      tip:'朱色には、魔除けや生命力を表す意味があるともいわれています。'},spot:'big_torii'}]},
   {id:'obj_sign',type:'object',x:130,y:170,r:25,name:'境内案内図',act:'しらべる',
    lines:[{t:'境内の案内図や。\n楼門→本殿→千本鳥居→奥社→\n四ツ辻→一ノ峰…と続いてる。',
-     learn:'<b>お山めぐり</b>\n本殿から山頂まで一周約2時間。お山全体が信仰の場なんやて。',spot:'map'}]},
+     card:{title:'境内案内',lead:'伏見稲荷は山全体に広がる大きな神社。',
+      body:'伏見稲荷大社は、本殿の周辺だけでなく、稲荷山へと続く参道全体に見どころがあります。千本鳥居の先にも、たくさんのお塚や参拝場所が続いています。',
+      tip:'時間に余裕があれば、奥へ進むほど静かな雰囲気も楽しめます。'},spot:'map'}]},
   {id:'obj_fox',type:'object',x:67,y:188,r:18,name:'狐像',act:'しらべる',
    lines:[{t:'凛とした狐の石像。稲荷の\n神さまのお使いやで。\n赤い前掛けがかわいい。',
-     learn:'<b>豆知識：狐像</b>\n狐は神の使い「神使」。稲を食べるネズミを退治することから五穀豊穣の守りに。',spot:'fox'}]},
+     card:{title:'お稲荷さんの狐',lead:'狐は神さまそのものではなく、お使いとされる存在。',
+      body:'伏見稲荷で見かける狐は、稲荷大神のお使いとされています。口にくわえているものには、稲穂、鍵、玉、巻物などがあり、それぞれに豊かさや知恵を感じさせる意味があります。',
+      tip:'狐像をよく見ると、くわえているものが少しずつ違うことがあります。'},spot:'fox'}]},
   {id:'exit_romon',type:'exit',x:90,y:160,r:17,name:'楼門へ進む',act:'すすむ',to:'romon',
    spawn:{x:90,y:330,dir:'up'}}
 ];
@@ -1040,16 +1055,24 @@ const SANDO_ENTITIES=[
 const ROMON_ENTITIES=[
   {id:'honden',type:'object',x:90,y:136,r:42,name:'本殿',act:'お参り',
    lines:[{t:'立派な本殿の前に来た。\n二礼二拍手一礼でお参りしよう。',
-     learn:'<b>豆知識：お参りの作法</b>\n二回おじぎ→二回拍手→お願いごと→一礼。これが基本やで。',spot:'sanpai'}],visit:'honden'},
+     card:{title:'本殿',lead:'伏見稲荷大社の中心となる大切な場所。',
+      body:'本殿は、稲荷大神をお祀りする中心的な建物です。商売繁昌、五穀豊穣、家内安全などを願って、全国から多くの人が参拝に訪れます。',
+      tip:'参拝するときは、心を落ち着けて、感謝や願いをそっと伝えてみましょう。'},spot:'sanpai'}],visit:'honden'},
   {id:'temizu',type:'object',x:47,y:205,r:23,name:'手水舎',act:'しらべる',
    lines:[{t:'手と口を清める場所や。\n柄杓で左手→右手→口の順やで。',
-     learn:'<b>豆知識：手水(ちょうず)</b>\n心身を清めてから神前へ。柄杓に直接口をつけないのが作法。',spot:'temizu'}]},
+     card:{title:'手水舎',lead:'参拝前に心と手を清める場所。',
+      body:'手水舎では、手や口を清めてからお参りします。これは、神さまの前に進む前に、身を整えるための作法です。',
+      tip:'柄杓を使う作法は場所によって案内があるので、現地の表示に合わせると安心です。'},spot:'temizu'}]},
   {id:'fox_left',type:'object',x:56,y:158,r:24,name:'左の狐像',act:'しらべる',
    lines:[{t:'本殿前の左側に立つ狐像。\n口に何かをくわえているみたい。\n稲穂や鍵、玉が多いんやて。',
-     learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
+     card:{title:'左の狐像',lead:'本殿前で参拝する人を見守る狐像。',
+      body:'伏見稲荷の狐像は、稲荷大神のお使いとされる存在です。口にくわえる稲穂や鍵、玉、巻物には、豊かさや守り、知恵を感じさせる意味があります。',
+      tip:'左右の狐像を見比べると、表情や持ち物の違いに気づくことがあります。'},spot:'fox_left'}]},
   {id:'fox_right',type:'object',x:124,y:158,r:24,name:'右の狐像',act:'しらべる',
    lines:[{t:'本殿前の右側にも狐像がある。\n左右で対になって、参拝する人を\n見守っているみたいや。',
-     learn:'<b>豆知識：狐がくわえるもの</b>\n稲穂(豊作)、鍵(米蔵の鍵)、宝珠(霊力)など意味があるんやて。',spot:'fox_item'}]},
+     card:{title:'右の狐像',lead:'左右で対になり、境内を守るように立つ狐像。',
+      body:'狐は神さまそのものではなく、稲荷大神のお使いとされています。左右の像が向かい合うように置かれていると、入口や大切な場所を守っているように感じられます。',
+      tip:'狐像の赤い前掛けは、信仰や願いの気持ちを表していることがあります。'},spot:'fox_right'}]},
   {id:'cat_honden',type:'cat',x:134,y:301,r:18,sprite:{body:'#f4f1e8'},name:'本殿のはちわれ猫',act:'なでる',
    react:'……にゃ。\n(静かに目を細めている)',learn:'本殿前で参拝客を見守る、落ち着いた白黒はちわれ猫。'},
   {id:'npc_romon_cleaner',type:'npc',x:48,y:260,r:18,name:'境内を掃除している人',act:'はなす',spriteKey:'npc_shrine_cleaner',
@@ -1064,7 +1087,9 @@ const ROMON_ENTITIES=[
 const SENBON_ENTITIES=[
   {id:'obj_senbon',type:'object',x:90,y:160,r:40,name:'千本鳥居',act:'しらべる',
    lines:[{t:'朱色の鳥居がどこまでも続く…！\nまるで朱のトンネルや。',
-     learn:'<b>豆知識：千本鳥居</b>\n願いが「通る」よう、江戸時代から鳥居を奉納する習わしが広まったんやて。裏に奉納者の名前があるで。',spot:'senbon'}],visit:'senbon'},
+     card:{title:'千本鳥居',lead:'伏見稲荷を象徴する朱色の鳥居の道。',
+      body:'千本鳥居は、願いが通る、または願いが通ったお礼として奉納された鳥居が並ぶ参道です。朱色の鳥居が連なる景色は、伏見稲荷を代表する風景として知られています。',
+      tip:'「千本」は正確な本数というより、たくさん並ぶ鳥居を表す言葉として親しまれています。'},spot:'senbon'}],visit:'senbon'},
   {id:'cat_senbon',type:'cat',x:120,y:292,r:18,sprite:{body:'#d8b048'},name:'千本鳥居のキジ白猫',act:'なでる',
    react:'……にゃ。\n(静かにこちらを見ている)',learn:'千本鳥居の道でひっそり佇む、細身のキジ白猫。'},
   {id:'to_next',type:'exit',x:90,y:126,r:24,name:'鳥居の奥へ',act:'すすむ',to:'senbon',
@@ -1165,13 +1190,14 @@ function drawSceneBackground(sceneId,camY){
 const SPOT_FULL={
   torii_manner:{ico:'⛩️',title:'鳥居のくぐり方',text:'端を通って軽く一礼。真ん中は神さまの通り道。'},
   senbei:{ico:'🍘',title:'稲荷せんべい',text:'狐の面の形に焼いた参道名物の瓦せんべい。'},
-  big_torii:{ico:'⛩️',title:'大鳥居と朱色',text:'朱色は魔除けと生命力の象徴。'},
-  map:{ico:'🗺️',title:'お山めぐり',text:'本殿から山頂まで一周約2時間の信仰の道。'},
-  fox:{ico:'🦊',title:'狐は神の使い',text:'五穀豊穣の守りと結びついた「神使」。'},
-  sanpai:{ico:'🙏',title:'二礼二拍手一礼',text:'おじぎ2回→拍手2回→お願い→一礼。'},
-  temizu:{ico:'💧',title:'手水の作法',text:'左手→右手→口の順で清める。'},
-  fox_item:{ico:'🦊',title:'狐がくわえるもの',text:'稲穂・鍵・宝珠など意味が込められている。'},
-  senbon:{ico:'⛩️',title:'千本鳥居',text:'願いが通るよう奉納された鳥居の連なり。'}
+  big_torii:{ico:'⛩️',title:'大鳥居',text:'ここから伏見稲荷の参道がはじまる。'},
+  map:{ico:'🗺️',title:'境内案内',text:'伏見稲荷は山全体に広がる大きな神社。'},
+  fox:{ico:'🦊',title:'お稲荷さんの狐',text:'狐は神さまそのものではなく、お使いとされる存在。'},
+  sanpai:{ico:'🙏',title:'本殿',text:'伏見稲荷大社の中心となる大切な場所。'},
+  temizu:{ico:'💧',title:'手水舎',text:'参拝前に心と手を清める場所。'},
+  fox_left:{ico:'🦊',title:'左の狐像',text:'本殿前で参拝する人を見守る狐像。'},
+  fox_right:{ico:'🦊',title:'右の狐像',text:'左右で対になり、境内を守るように立つ狐像。'},
+  senbon:{ico:'⛩️',title:'千本鳥居',text:'伏見稲荷を象徴する朱色の鳥居の道。'}
 };
 const CAT_META={
   cat_torii:{ico:'🐱',name:'気まぐれ猫',text:'鳥居の根元がお気に入りの昼寝スポット。',
@@ -1247,6 +1273,17 @@ function updateNearest(){
 
 //============ 会話 ============
 let dlg={active:false,lines:[],idx:0,ent:null};
+function escapeHTML(s){
+  return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function formatLearnCard(card){
+  return `<div class="learn-card">
+    <div class="card-title">${escapeHTML(card.title)}</div>
+    <div class="card-lead">${escapeHTML(card.lead)}</div>
+    <div class="card-body">${escapeHTML(card.body)}</div>
+    <div class="card-tip"><b>豆知識</b> ${escapeHTML(card.tip)}</div>
+  </div>`;
+}
 function startDialog(e){
   if(!e.lines&&!e.react)return;
   dlg.active=true;dlg.ent=e;dlg.idx=0;
@@ -1264,9 +1301,13 @@ function showPage(){
   }else{dialog.classList.remove('cat-mode');catImg.removeAttribute('src');catImg.onerror=null;}
   document.getElementById('dlg-text').textContent=pg.t;
   const L=document.getElementById('dlg-learn'),M=document.getElementById('dlg-more');
-  L.classList.remove('show');L.innerHTML='';
+  L.classList.remove('show','card-show');L.innerHTML='';
   M.onclick=null;
-  if(pg.learn){
+  if(pg.card){
+    L.innerHTML=formatLearnCard(pg.card);
+    L.classList.add('show','card-show');
+    M.style.display='none';M.onpointerdown=null;
+  }else if(pg.learn){
     M.style.display='inline-block';
     M.onpointerdown=e=>{e.preventDefault();e.stopPropagation();L.innerHTML=pg.learn;L.classList.add('show');M.style.display='none';};
   }
