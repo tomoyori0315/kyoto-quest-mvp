@@ -13,17 +13,19 @@
     --app-height:100vh; --dpad-size:132px; --dpad-cell:44px;
     --dpad-idle-opacity:.56; --dpad-active-opacity:.92;
   }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   html,body{height:100%;overflow:hidden;background:#1a140e;}
   body{display:flex;align-items:center;justify-content:center;
     font-family:'Hiragino Maru Gothic ProN','Yu Gothic','YuGothic','Meiryo',sans-serif;
-    background:radial-gradient(circle at 30% 20%,#241a12 0%,#14100b 80%);}
+    background:radial-gradient(circle at 30% 20%,#241a12 0%,#14100b 80%);touch-action:none;}
   #wrap{position:relative;width:100vw;height:var(--app-height);
     max-width:min(100vw,calc(var(--app-height)*0.5625));max-height:min(var(--app-height),calc(100vw*1.7778));
     aspect-ratio:9/16;background:#000;
-    box-shadow:0 0 0 3px var(--wood-d),0 0 40px rgba(0,0,0,.7);overflow:hidden;}
+    box-shadow:0 0 0 3px var(--wood-d),0 0 40px rgba(0,0,0,.7);overflow:hidden;
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
   canvas{position:absolute;inset:0;width:100%;height:100%;
-    image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
+    image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
 
   .panel{background:linear-gradient(180deg,var(--washi) 0%,var(--washi-d) 100%);
     border:2px solid var(--ui-line);border-radius:8px;
@@ -79,13 +81,16 @@
     background:radial-gradient(circle,#e8d8b4,#cdb888);border:2px solid var(--ui-line);}
   #controls.stick-mode{justify-content:flex-end;}
   #virtual-stick{position:absolute;left:0;top:0;width:112px;height:112px;z-index:22;display:none;pointer-events:none;
-    transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 3px 8px rgba(0,0,0,.36));}
+    transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 3px 8px rgba(0,0,0,.36));
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   #virtual-stick.is-active{display:block;}
   #stick-base{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(202,163,95,.75);
-    background:rgba(240,230,207,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(2px);}
+    background:rgba(240,230,207,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(2px);
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
   #stick-knob{position:absolute;left:50%;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%,-50%);
     border:2px solid rgba(202,163,95,.9);background:linear-gradient(180deg,rgba(243,234,212,.9),rgba(216,195,156,.86));
-    box-shadow:0 2px 0 rgba(90,52,24,.45);}
+    box-shadow:0 2px 0 rgba(90,52,24,.45);
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
   #act-cluster{display:flex;gap:9px;align-items:flex-end;pointer-events:auto;padding-bottom:6px;margin-left:auto;}
   .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
   .act .circle{width:clamp(48px,13vw,58px);height:clamp(48px,13vw,58px);border-radius:50%;
@@ -193,8 +198,9 @@
   #debug-editor textarea{width:100%;height:38px;background:rgba(7,16,7,.86);color:#caffca;border:1px solid #5eda5e;border-radius:4px;padding:4px;font:inherit;resize:none;}
   #debug-editor .dbg-info{opacity:.9;line-height:1.35;}
   #debug-editor input,#debug-editor textarea{-webkit-user-select:text;user-select:text;}
-  #controls,#dpad,.dbtn,#act-cluster,.act,#book-btn,#debug-btn,#start-btn,#dialog,#debug-editor button{
+  #controls,#dpad,.dbtn,#act-cluster,.act,#book-btn,#debug-btn,#start-btn,#dialog,#virtual-stick,#stick-base,#stick-knob,#debug-editor button{
     touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
   }
   @media(max-height:700px){
     :root{--dpad-size:120px;--dpad-cell:40px;}
@@ -217,7 +223,7 @@
 </head>
 <body>
 <div id="wrap">
-  <canvas id="game"></canvas>
+  <canvas id="game" draggable="false"></canvas>
 
   <div id="hud-top">
     <div id="hud-left">
@@ -1648,6 +1654,8 @@ function syncDpadVisual(){
 function suppressNativeTouch(id){
   const el=document.getElementById(id);
   el.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+  el.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 function bindDir(id,dir){
   const el=document.getElementById(id);
@@ -1658,6 +1666,7 @@ function bindDir(id,dir){
 }
 bindDir('d-up','up');bindDir('d-down','down');bindDir('d-left','left');bindDir('d-right','right');
 suppressNativeTouch('controls');suppressNativeTouch('hud-actions');suppressNativeTouch('dialog');suppressNativeTouch('start-btn');
+suppressNativeTouch('game');suppressNativeTouch('virtual-stick');
 const stickState={active:false,pointerId:null,cx:0,cy:0,dir:null,max:36,dead:10};
 function setStickDirection(dir){
   for(const d of ['up','down','left','right'])held[d]=d===dir;
@@ -1691,6 +1700,10 @@ function bindVirtualStick(){
   document.getElementById('controls').classList.toggle('stick-mode',STICK_ENABLED);
   if(!STICK_ENABLED)return;
   const wrap=document.getElementById('wrap'),stick=document.getElementById('virtual-stick');
+  wrap.addEventListener('contextmenu',e=>{
+    if(e.target.closest('#debug-editor input,#debug-editor textarea,#debug-editor select'))return;
+    e.preventDefault();
+  },{capture:true});
   // Stick mode: left bottom movement, right bottom action. The stick never starts from UI controls.
   wrap.addEventListener('pointerdown',e=>{
     if(!canStartVirtualStick(e))return;
@@ -1700,13 +1713,15 @@ function bindVirtualStick(){
     stick.style.top=`${e.clientY-wrap.getBoundingClientRect().top}px`;
     stick.classList.add('is-active');wrap.setPointerCapture?.(e.pointerId);
     updateVirtualStickDirection(0,0);
-  },true);
+  },{capture:true,passive:false});
   wrap.addEventListener('pointermove',e=>{
     if(!stickState.active||e.pointerId!==stickState.pointerId)return;
     e.preventDefault();updateVirtualStickDirection(e.clientX-stickState.cx,e.clientY-stickState.cy);
-  });
+  },{passive:false});
   for(const ev of ['pointerup','pointercancel','pointerleave','lostpointercapture']){
-    wrap.addEventListener(ev,e=>{if(stickState.active&&e.pointerId===stickState.pointerId)resetVirtualStick();});
+    wrap.addEventListener(ev,e=>{
+      if(stickState.active&&e.pointerId===stickState.pointerId){e.preventDefault();resetVirtualStick();}
+    },{passive:false});
   }
 }
 bindVirtualStick();
