@@ -77,15 +77,16 @@
   #d-right{top:var(--dpad-cell);right:0;border-radius:4px 10px 10px 4px;}
   #d-center{top:var(--dpad-cell);left:var(--dpad-cell);width:var(--dpad-cell);height:var(--dpad-cell);
     background:radial-gradient(circle,#e8d8b4,#cdb888);border:2px solid var(--ui-line);}
-  #virtual-stick{position:absolute;left:0;top:0;width:112px;height:112px;z-index:21;display:none;pointer-events:none;
+  #controls.stick-mode{justify-content:flex-end;}
+  #virtual-stick{position:absolute;left:0;top:0;width:112px;height:112px;z-index:22;display:none;pointer-events:none;
     transform:translate(-50%,-50%);opacity:.92;filter:drop-shadow(0 3px 8px rgba(0,0,0,.36));}
-  #virtual-stick.show{display:block;}
+  #virtual-stick.is-active{display:block;}
   #stick-base{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(202,163,95,.75);
     background:rgba(240,230,207,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(2px);}
   #stick-knob{position:absolute;left:50%;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%,-50%);
     border:2px solid rgba(202,163,95,.9);background:linear-gradient(180deg,rgba(243,234,212,.9),rgba(216,195,156,.86));
     box-shadow:0 2px 0 rgba(90,52,24,.45);}
-  #act-cluster{display:flex;gap:9px;align-items:flex-end;pointer-events:auto;padding-bottom:6px;}
+  #act-cluster{display:flex;gap:9px;align-items:flex-end;pointer-events:auto;padding-bottom:6px;margin-left:auto;}
   .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
   .act .circle{width:clamp(48px,13vw,58px);height:clamp(48px,13vw,58px);border-radius:50%;
     background:linear-gradient(180deg,#f3ead4,#d8c39c);border:3px solid var(--ui-line);
@@ -268,16 +269,16 @@
       <div class="dbtn" id="d-right">▶</div>
       <div class="dbtn" id="d-down">▼</div>
     </div>
-    <div id="virtual-stick">
-      <div id="stick-base"></div>
-      <div id="stick-knob"></div>
-    </div>
     <div id="act-cluster">
       <div class="act primary disabled" id="act-main">
         <div class="circle" id="act-icon">🔍</div>
         <div class="lbl" id="act-label">しらべる</div>
       </div>
     </div>
+  </div>
+  <div id="virtual-stick" class="virtual-stick">
+    <div id="stick-base"></div>
+    <div id="stick-knob"></div>
   </div>
 
   <div id="toast-layer"></div>
@@ -1665,7 +1666,7 @@ function setStickDirection(dir){
 function resetVirtualStick(){
   if(stickState.dir)for(const d of ['up','down','left','right'])held[d]=false;
   stickState.active=false;stickState.pointerId=null;stickState.dir=null;
-  document.getElementById('virtual-stick').classList.remove('show');
+  document.getElementById('virtual-stick').classList.remove('is-active');
   document.getElementById('stick-knob').style.transform='translate(-50%,-50%)';
   syncDpadVisual();
 }
@@ -1679,22 +1680,25 @@ function updateVirtualStickDirection(dx,dy){
 }
 function canStartVirtualStick(e){
   if(!STICK_ENABLED||stickState.active||!game.started)return false;
-  if(e.target.closest('#act-cluster,#hud-top,#dialog,#book,#debug-editor,#title'))return false;
+  if(dlg.active||document.getElementById('book').classList.contains('show'))return false;
+  if(e.target.closest('button,input,select,textarea,#act-cluster,#hud-top,#dialog,#book,#debug-editor,#title'))return false;
   const wrap=document.getElementById('wrap'),r=wrap.getBoundingClientRect();
   const x=e.clientX-r.left,y=e.clientY-r.top;
-  return x<r.width*.58&&y>r.height*.48;
+  return x<r.width*.55&&y>r.height*.58;
 }
 function bindVirtualStick(){
   document.getElementById('dpad').classList.toggle('stick-hidden',STICK_ENABLED);
+  document.getElementById('controls').classList.toggle('stick-mode',STICK_ENABLED);
   if(!STICK_ENABLED)return;
   const wrap=document.getElementById('wrap'),stick=document.getElementById('virtual-stick');
+  // Stick mode: left bottom movement, right bottom action. The stick never starts from UI controls.
   wrap.addEventListener('pointerdown',e=>{
     if(!canStartVirtualStick(e))return;
     e.preventDefault();e.stopPropagation();
     stickState.active=true;stickState.pointerId=e.pointerId;stickState.cx=e.clientX;stickState.cy=e.clientY;
     stick.style.left=`${e.clientX-wrap.getBoundingClientRect().left}px`;
     stick.style.top=`${e.clientY-wrap.getBoundingClientRect().top}px`;
-    stick.classList.add('show');wrap.setPointerCapture?.(e.pointerId);
+    stick.classList.add('is-active');wrap.setPointerCapture?.(e.pointerId);
     updateVirtualStickDirection(0,0);
   },true);
   wrap.addEventListener('pointermove',e=>{
